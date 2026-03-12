@@ -14,8 +14,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/server/node_modules ./packages/server/node_modules
+COPY package.json pnpm-workspace.yaml ./
 COPY packages/server/ packages/server/
-COPY packages/server/tsconfig.json packages/server/
 RUN pnpm build:server
 
 # ---- Production ----
