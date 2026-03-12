@@ -25,7 +25,10 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/packages/server/dist ./dist
 COPY --from=builder /app/packages/server/package.json ./
+COPY --from=deps /app/node_modules ./root_node_modules
 COPY --from=deps /app/packages/server/node_modules ./node_modules
+
+ENV NODE_PATH=/app/root_node_modules:/app/node_modules
 
 EXPOSE 8001
 CMD ["node", "dist/index.js"]
