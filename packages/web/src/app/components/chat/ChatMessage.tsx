@@ -4,6 +4,8 @@ import { Bot, User, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -26,21 +28,23 @@ export default function ChatMessage({
   };
 
   return (
-    <div className={cn("animate-fade-in flex gap-3 px-4 py-3", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("animate-fade-in flex gap-3 px-2 md:px-4 py-3", isUser ? "justify-end" : "justify-start")}>
       {/* Assistant avatar */}
       {!isUser && (
-        <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center shrink-0 mt-1">
-          <Bot size={16} className="text-white" />
-        </div>
+        <Avatar className="h-8 w-8 shrink-0 mt-1">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            <Bot size={16} />
+          </AvatarFallback>
+        </Avatar>
       )}
 
       {/* Message bubble */}
       <div
         className={cn(
-          "relative group max-w-[75%] rounded-2xl px-4 py-3",
+          "relative group max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3",
           isUser
-            ? "bg-[var(--primary)] text-white rounded-br-md"
-            : "bg-[var(--assistant-bubble)] border border-[var(--border)] rounded-bl-md"
+            ? "bg-primary text-primary-foreground rounded-br-sm"
+            : "bg-card border border-border rounded-bl-sm"
         )}
       >
         {isUser ? (
@@ -53,23 +57,25 @@ export default function ChatMessage({
 
         {/* Copy button */}
         {!isUser && content && !isStreaming && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleCopy}
-            className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100
-                       flex items-center gap-1 text-[11px] text-[var(--muted)]
-                       hover:text-[var(--foreground)] transition-all cursor-pointer"
+            className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100 h-7 px-2 gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-all"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? "已复制" : "复制"}
-          </button>
+          </Button>
         )}
       </div>
 
       {/* User avatar */}
       {isUser && (
-        <div className="w-8 h-8 rounded-lg bg-[var(--user-bubble)] border border-[var(--border-light)] flex items-center justify-center shrink-0 mt-1">
-          <User size={16} className="text-[var(--foreground)]" />
-        </div>
+        <Avatar className="h-8 w-8 shrink-0 mt-1">
+          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
+            <User size={16} />
+          </AvatarFallback>
+        </Avatar>
       )}
     </div>
   );

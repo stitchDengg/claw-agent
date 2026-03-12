@@ -3,6 +3,7 @@
 import { Send, Square, Paperclip } from "lucide-react";
 import { useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface ChatInputProps {
   input: string;
@@ -21,7 +22,6 @@ export default function ChatInput({
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -40,21 +40,23 @@ export default function ChatInput({
   };
 
   return (
-    <div className="border-t border-[var(--border)] bg-[var(--background)] p-4">
+    <div className="border-t border-border bg-background/80 backdrop-blur-sm p-3 md:p-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] shrink-0">
       <form onSubmit={onSubmit} className="max-w-3xl mx-auto">
         <div
-          className="flex items-end gap-2 bg-[var(--card)] border border-[var(--border)]
-                      rounded-2xl px-4 py-3 focus-within:border-[var(--primary)]
-                      transition-colors"
+          className={cn(
+            "flex items-end gap-2 bg-card border border-border rounded-2xl px-3 md:px-4 py-2.5 md:py-3 transition-all",
+            "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
+          )}
         >
           {/* Attach button */}
-          <button
+          <Button
             type="button"
-            className="p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)]
-                       hover:bg-[var(--border)] transition-colors cursor-pointer shrink-0 mb-0.5"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 md:h-9 md:w-9 shrink-0 text-muted-foreground hover:text-foreground"
           >
             <Paperclip size={18} />
-          </button>
+          </Button>
 
           {/* Input */}
           <textarea
@@ -64,37 +66,34 @@ export default function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
             rows={1}
-            className="flex-1 bg-transparent text-sm text-[var(--foreground)] resize-none
-                       outline-none placeholder:text-[var(--muted)] max-h-[200px] leading-relaxed"
+            className="flex-1 bg-transparent text-sm text-foreground resize-none
+                       outline-none placeholder:text-muted-foreground max-h-[200px] leading-relaxed"
           />
 
           {/* Send / Stop button */}
           {isLoading ? (
-            <button
+            <Button
               type="button"
+              variant="destructive"
+              size="icon"
               onClick={onStop}
-              className="p-2 rounded-lg bg-[var(--danger)] text-white
-                         hover:opacity-90 transition-opacity cursor-pointer shrink-0"
+              className="h-10 w-10 md:h-9 md:w-9 shrink-0"
             >
               <Square size={16} />
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="submit"
+              size="icon"
               disabled={!input.trim()}
-              className={cn(
-                "p-2 rounded-lg transition-all cursor-pointer shrink-0",
-                input.trim()
-                  ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
-              )}
+              className="h-10 w-10 md:h-9 md:w-9 shrink-0"
             >
               <Send size={16} />
-            </button>
+            </Button>
           )}
         </div>
 
-        <p className="text-center text-[11px] text-[var(--muted)] mt-2">
+        <p className="text-center text-[11px] text-muted-foreground mt-2">
           Claw Agent 可能会犯错，请核实重要信息。
         </p>
       </form>
