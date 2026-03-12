@@ -44,7 +44,8 @@ const AgentState = Annotation.Root({
 
 // ========== 创建 Agent ==========
 
-let agentInstance: ReturnType<typeof StateGraph.prototype.compile> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let agentInstance: any = null;
 
 export function createAgent() {
   const apiKey = process.env.MINIMAX_API_KEY || "";

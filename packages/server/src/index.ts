@@ -58,7 +58,7 @@ app.post("/api/chat", async (req, res) => {
 
       try {
         // 调用 Agent（LangGraph invoke）
-        const result = await agent.invoke({ messages: lcMessages });
+        const result = await agent!.invoke({ messages: lcMessages });
         const finalMessages: BaseMessage[] = result.messages;
 
         // 提取最后一条 AI 消息
@@ -98,7 +98,7 @@ app.post("/api/chat", async (req, res) => {
       }
     } else {
       // ======= 非流式响应 =======
-      const result = await agent.invoke({ messages: lcMessages });
+      const result = await agent!.invoke({ messages: lcMessages });
       const finalMessages: BaseMessage[] = result.messages;
 
       let aiResponse = "";
@@ -125,7 +125,7 @@ app.post("/api/chat", async (req, res) => {
 app.get("/api/graph", (_req, res) => {
   try {
     const agent = getAgent();
-    const mermaid = agent.getGraph().drawMermaid();
+    const mermaid = agent!.getGraph().drawMermaid();
     res.json({ mermaid });
   } catch {
     res.json({
