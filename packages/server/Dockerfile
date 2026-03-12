@@ -19,14 +19,14 @@ COPY packages/server/ packages/server/
 RUN pnpm build:server
 
 # ---- Production ----
-FROM node:20-alpine AS runner
+FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=builder /app/packages/server/dist ./dist
-COPY --from=builder /app/packages/server/package.json ./
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/server/node_modules ./node_modules
+COPY --from=builder /app/packages/server/package.json ./package.json
+COPY .npmrc ./
+RUN pnpm install --prod --ignore-scripts
 
 EXPOSE 8001
 CMD ["node", "dist/index.js"]
