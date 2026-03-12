@@ -1,0 +1,48 @@
+name: Deploy to Tencent Cloud
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -e
+
+            # 项目目录
+            APP_DIR=~/claw-agent
+
+            # 首次部署：克隆仓库
+            if [ ! -d "$APP_DIR" ]; then
+              git clone https://github.com/${{ github.repository }}.git "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+
+            # 拉取最新代码
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 写入环境变量
+            cat > .env << 'ENVEOF'
+            MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }}
+            MINIMAX_BASE_URL=https://api.minimaxi.com/anthropic
+            HOST=0.0.0.0
+            PORT=8001
+            ENVEOF
+
+            # 构建并启动服务
+            docker compose up -d --build --remove-orphans
+
+            # 清理旧镜像
+            docker image prune -f
+
+            echo "✅ Deploy complete!"

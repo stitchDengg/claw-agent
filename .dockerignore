@@ -1,0 +1,16 @@
+node_modules
+.next
+dist
+out
+build
+*.log
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+.DS_Store
+*.md
+.vscode
+.idea
+skills
