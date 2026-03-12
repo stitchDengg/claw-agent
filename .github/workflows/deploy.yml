@@ -32,12 +32,12 @@ jobs:
             git reset --hard origin/main
 
             # 写入环境变量
-            cat > .env << 'ENVEOF'
-            MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }}
-            MINIMAX_BASE_URL=https://api.minimaxi.com/anthropic
-            HOST=0.0.0.0
-            PORT=8001
-            ENVEOF
+            cat > .env <<'ENVEOF'
+MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }}
+MINIMAX_BASE_URL=https://api.minimaxi.com/anthropic
+HOST=0.0.0.0
+PORT=8001
+ENVEOF
 
             # 构建并启动服务
             docker compose up -d --build --remove-orphans
