@@ -1,0 +1,48 @@
+---
+description: OpenSpec 工作流规范 - 定义需求分析、实现、审查的三阶段协作流程
+alwaysApply: true
+---
+
+# OpenSpec Workflow
+
+本项目使用 OpenSpec 工作流管理功能开发，涉及三个专业子代理角色：
+
+## 角色分工
+
+### pm-spec (需求分析)
+将模糊的功能请求转化为结构化的 Spec 文档（`.claude/plans/`），包含验收标准和技术约束。
+- **触发时机**: 用户描述新功能、提出需求、或需要梳理想法时
+- **使用方式**: 通过 Task 工具启动 `pm-spec` 子代理
+
+### implementer (功能实现)
+严格按照 Spec 文档实现代码，遵循 Monorepo 架构纪律。
+- **触发时机**: Spec 文档状态为 `READY_FOR_BUILD`，用户要求开始编码时
+- **使用方式**: 通过 Task 工具启动 `implementer` 子代理
+
+### reviewer-tester (质量审查)
+对已完成的代码进行深度审查，验证 Spec 合规性、类型安全、性能和架构纪律。
+- **触发时机**: 功能实现完成，需要质量保证时
+- **使用方式**: 通过 Task 工具启动 `reviewer-tester` 子代理
+
+## 典型流程
+
+```
+用户需求 → pm-spec(需求文档) → implementer(编码实现) → reviewer-tester(质量审查)
+```
+
+## Spec 文档规范
+
+Spec 文档位于 `.claude/plans/`，命名格式: `feature-[name]-spec.md`
+
+状态流转:
+- `READY_FOR_ARCH`: 需要架构设计后再实现
+- `READY_FOR_BUILD`: 可直接实现
+- `PASSED_REVIEW`: 审查通过
+
+## OpenSpec CLI 集成
+
+项目使用 `openspec` CLI 管理变更：
+- `openspec list --json` - 列出所有变更
+- `openspec status --change "<name>" --json` - 查看变更状态
+- `openspec new change "<name>"` - 创建新变更
+- `openspec instructions <artifact> --change "<name>" --json` - 获取构建指令

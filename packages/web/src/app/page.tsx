@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import Sidebar from "./components/sidebar/Sidebar";
 import ChatMessage from "./components/chat/ChatMessage";
@@ -13,12 +13,24 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthGuard } from "@/components/AuthGuard";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
+  return (
+    <AuthGuard>
+      <HomeContent />
+    </AuthGuard>
+  );
+}
+
+function HomeContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { user, logout, token } = useAuth();
 
   const {
     conversations,
@@ -26,36 +38,57 @@ export default function Home() {
     setActiveId,
     createConversation,
     deleteConversation,
-    updateTitle,
+    loadMessagesForConversation,
+    refreshConversations,
+    isLoading: conversationsLoading,
   } = useConversations();
 
   const { messages, input, setInput, handleSubmit, isLoading, stop, setMessages } =
     useChat({
       api: "/api/chat",
       id: activeId,
-      onFinish: (message) => {
-        if (messages.length === 0 && message.role === "assistant") {
-          const title = message.content.substring(0, 30).replace(/\n/g, " ");
-          updateTitle(activeId, title || "新对话");
-        }
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: { conversationId: activeId },
+      onFinish: () => {
+        // Backend auto-sets title on first message; refresh sidebar
+        refreshConversations();
       },
     });
+
+  // Load messages when activeId changes
+  useEffect(() => {
+    if (!activeId) return;
+    let cancelled = false;
+    (async () => {
+      const msgs = await loadMessagesForConversation(activeId);
+      if (!cancelled) {
+        setMessages(msgs);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
+
+  const handleSubmitWithSave = useCallback(
+    (e: React.FormEvent) => {
+      handleSubmit(e as React.FormEvent<HTMLFormElement>);
+    },
+    [handleSubmit]
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleNewConversation = () => {
-    const newId = createConversation();
+  const handleNewConversation = async () => {
+    await createConversation();
     setMessages([]);
     setInput("");
     setSheetOpen(false);
-    void newId;
   };
 
   const handleSelectConversation = (id: string) => {
     setActiveId(id);
-    setMessages([]);
     setInput("");
     setSheetOpen(false);
   };
@@ -80,6 +113,8 @@ export default function Home() {
       onCreate={handleNewConversation}
       onDelete={deleteConversation}
       isCollapsed={false}
+      username={user?.username}
+      onLogout={logout}
     />
   );
 
@@ -94,6 +129,8 @@ export default function Home() {
           onCreate={handleNewConversation}
           onDelete={deleteConversation}
           isCollapsed={sidebarCollapsed}
+          username={user?.username}
+          onLogout={logout}
         />
       )}
 
@@ -123,16 +160,19 @@ export default function Home() {
               <PanelLeft size={18} />
             )}
           </Button>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h2 className="text-sm font-medium truncate">
               {conversations.find((c) => c.id === activeId)?.title || "新对话"}
             </h2>
             <p className="text-[11px] text-muted-foreground truncate">
-              {messages.length > 0
-                ? `${messages.length} 条消息`
-                : "开始新的对话"}
+              {conversationsLoading
+                ? "加载中..."
+                : messages.length > 0
+                  ? `${messages.length} 条消息`
+                  : "开始新的对话"}
             </p>
           </div>
+          <ThemeToggle />
         </header>
 
         {/* Messages */}
@@ -166,7 +206,7 @@ export default function Home() {
         <ChatInput
           input={input}
           onChange={setInput}
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmitWithSave}
           onStop={stop}
           isLoading={isLoading}
         />

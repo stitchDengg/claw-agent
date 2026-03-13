@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquarePlus, Trash2, Bot } from "lucide-react";
+import { MessageSquarePlus, Trash2, Bot, LogOut, User } from "lucide-react";
 import { Conversation } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ interface SidebarProps {
   onCreate: () => void;
   onDelete: (id: string) => void;
   isCollapsed: boolean;
+  username?: string;
+  onLogout?: () => void;
 }
 
 export default function Sidebar({
@@ -23,6 +25,8 @@ export default function Sidebar({
   onCreate,
   onDelete,
   isCollapsed,
+  username,
+  onLogout,
 }: SidebarProps) {
   return (
     <aside
@@ -87,12 +91,32 @@ export default function Sidebar({
 
       {/* Footer */}
       <div className="p-3 border-t border-border shrink-0">
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-[11px] text-muted-foreground">
-            Powered by LangGraph.js
-          </span>
-        </div>
+        {username ? (
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <User size={14} className="text-primary" />
+              </div>
+              <span className="text-sm truncate">{username}</span>
+            </div>
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                title="退出登录"
+              >
+                <LogOut size={14} />
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-[11px] text-muted-foreground">
+              Powered by LangGraph.js
+            </span>
+          </div>
+        )}
       </div>
     </aside>
   );

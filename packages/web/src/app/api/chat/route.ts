@@ -10,14 +10,29 @@ const BACKEND_URL = process.env.LANGGRAPH_BACKEND_URL || "http://localhost:8001"
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const authHeader = req.headers.get("authorization");
 
     // 转发到 LangGraph.js 后端
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (authHeader) {
+      headers["Authorization"] = authHeader;
+    }
+
+    // 从 messages 数组中提取最后一条用户消息
+    const lastUserMessage = [...(body.messages || [])]
+      .reverse()
+      .find((m: { role: string; content: string }) => m.role === "user");
+
+    if (!lastUserMessage) {
+      throw new Error("No user message found");
+    }
+
     const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
-        messages: body.messages,
-        stream: true,
+        conversationId: body.conversationId,
+        message: lastUserMessage.content,
       }),
     });
 

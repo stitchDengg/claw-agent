@@ -40,7 +40,7 @@ export default function ChatInput({
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-sm p-3 md:p-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] shrink-0">
+    <div className="border-t border-border bg-background/80 backdrop-blur-sm p-3 md:p-4 shrink-0">
       <form onSubmit={onSubmit} className="max-w-3xl mx-auto">
         <div
           className={cn(
