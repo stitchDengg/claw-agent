@@ -26,10 +26,8 @@ COPY packages/server/ packages/server/
 # Build agent first (server depends on it)
 RUN pnpm build:agent
 
-# Generate Prisma client and copy to a known location (symlinks don't survive COPY)
+# Generate Prisma client (output to packages/server/node_modules/.prisma/client per schema.prisma)
 RUN cd packages/server && npx prisma generate
-RUN cp -rL /app/node_modules/.prisma /app/_prisma_client && \
-    cp -rL /app/node_modules/@prisma /app/_prisma_pkg
 
 # Build server
 RUN pnpm build:server
@@ -54,8 +52,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-s
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma --save-dev
 
 # Copy generated Prisma client into node_modules
-COPY --from=builder /app/_prisma_client ./node_modules/.prisma
-COPY --from=builder /app/_prisma_pkg ./node_modules/@prisma
+COPY --from=builder /app/packages/server/node_modules/.prisma ./node_modules/.prisma
 
 EXPOSE 8001
 CMD ["node", "dist/main.js"]
