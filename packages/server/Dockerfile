@@ -1,5 +1,8 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9 --activate
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
 # ---- Dependencies ----
 FROM base AS deps
@@ -8,7 +11,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/agent/package.json packages/agent/
 COPY packages/web/package.json packages/web/
 COPY packages/server/package.json packages/server/
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # ---- Build ----
 FROM base AS builder
@@ -43,10 +46,10 @@ COPY .npmrc ./
 COPY --from=builder /app/packages/agent/dist ./node_modules/@claw-agent/agent/dist
 COPY --from=builder /app/packages/agent/package.json ./node_modules/@claw-agent/agent/package.json
 
-RUN pnpm install --prod --ignore-scripts
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-scripts
 
 # Install prisma CLI for migrations
-RUN pnpm add prisma --save-dev
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma --save-dev
 
 # Copy generated Prisma client into node_modules
 COPY --from=builder /app/packages/server/node_modules/.prisma ./node_modules/.prisma
