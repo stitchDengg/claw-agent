@@ -52,8 +52,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-s
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma --save-dev
 
 # Copy generated Prisma client into node_modules
-COPY --from=builder /app/packages/server/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/packages/server/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 8001
 CMD ["node", "dist/main.js"]
