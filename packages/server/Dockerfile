@@ -5,6 +5,7 @@ RUN corepack enable && corepack prepare pnpm@9 --activate
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY packages/agent/package.json packages/agent/
 COPY packages/web/package.json packages/web/
 COPY packages/server/package.json packages/server/
 RUN pnpm install --frozen-lockfile
@@ -13,9 +14,19 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/agent/node_modules ./packages/agent/node_modules
 COPY --from=deps /app/packages/server/node_modules ./packages/server/node_modules
 COPY package.json pnpm-workspace.yaml ./
+COPY packages/agent/ packages/agent/
 COPY packages/server/ packages/server/
+
+# Build agent first (server depends on it)
+RUN pnpm build:agent
+
+# Generate Prisma client
+RUN cd packages/server && npx prisma generate
+
+# Build server
 RUN pnpm build:server
 
 # ---- Production ----
@@ -25,8 +36,21 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/packages/server/dist ./dist
 COPY --from=builder /app/packages/server/package.json ./package.json
+COPY --from=builder /app/packages/server/prisma ./prisma
 COPY .npmrc ./
+
+# Copy agent dist (server runtime dependency)
+COPY --from=builder /app/packages/agent/dist ./node_modules/@claw-agent/agent/dist
+COPY --from=builder /app/packages/agent/package.json ./node_modules/@claw-agent/agent/package.json
+
 RUN pnpm install --prod --ignore-scripts
 
+# Install prisma CLI for migrations
+RUN pnpm add prisma --save-dev
+
+# Copy generated Prisma client into node_modules
+COPY --from=builder /app/packages/server/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/packages/server/node_modules/@prisma ./node_modules/@prisma
+
 EXPOSE 8001
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]

@@ -20,15 +20,34 @@ jobs:
             # 项目目录
             APP_DIR=~/claw-agent
 
+            # git 操作重试函数（国内访问 GitHub 不稳定）
+            retry() {
+              local n=0
+              local max=3
+              local delay=5
+              while true; do
+                "$@" && break || {
+                  n=$((n+1))
+                  if [ $n -ge $max ]; then
+                    echo "❌ Command failed after $max attempts: $*"
+                    return 1
+                  fi
+                  echo "⚠️ Attempt $n/$max failed, retrying in ${delay}s..."
+                  sleep $delay
+                  delay=$((delay * 2))
+                }
+              done
+            }
+
             # 首次部署：克隆仓库
             if [ ! -d "$APP_DIR" ]; then
-              git clone https://github.com/${{ github.repository }}.git "$APP_DIR"
+              retry git clone https://github.com/${{ github.repository }}.git "$APP_DIR"
             fi
 
             cd "$APP_DIR"
 
             # 拉取最新代码
-            git fetch origin main
+            retry git fetch origin main
             git reset --hard origin/main
 
             # 写入环境变量
@@ -36,9 +55,15 @@ jobs:
             echo "MINIMAX_BASE_URL=https://api.minimaxi.com/anthropic" >> .env
             echo "HOST=0.0.0.0" >> .env
             echo "PORT=8001" >> .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "CORS_ORIGIN=http://localhost:3000" >> .env
 
             # 构建并启动服务
             docker compose up -d --build --remove-orphans
+
+            # 运行数据库迁移
+            docker compose exec -T server npx prisma migrate deploy --schema=./prisma/schema.prisma || echo "⚠️ Migration skipped"
 
             # 清理旧镜像
             docker image prune -f
