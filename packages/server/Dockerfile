@@ -26,8 +26,10 @@ COPY packages/server/ packages/server/
 # Build agent first (server depends on it)
 RUN pnpm build:agent
 
-# Generate Prisma client (output to packages/server/node_modules/.prisma/client per schema.prisma)
-RUN cd packages/server && npx prisma generate
+# Generate Prisma client, then copy to a fixed location (pnpm symlinks don't survive Docker COPY)
+RUN cd packages/server && npx prisma generate && \
+    mkdir -p /app/_generated_prisma && \
+    cp -rL $(find /app/node_modules -path '*/.prisma/client' -type d | head -1)/.. /app/_generated_prisma/
 
 # Build server
 RUN pnpm build:server
@@ -52,7 +54,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-s
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma --save-dev
 
 # Copy generated Prisma client into node_modules
-COPY --from=builder /app/packages/server/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/_generated_prisma/.prisma ./node_modules/.prisma
 
 EXPOSE 8001
 CMD ["node", "dist/main.js"]
