@@ -25,8 +25,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const AUTH_API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:8001";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -37,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const controller = new AbortController();
     const storedToken = localStorage.getItem("claw-token");
     if (storedToken) {
-      fetch(`${AUTH_API_BASE}/api/auth/me`, {
+      fetch(`/api/auth/me`, {
         headers: { Authorization: `Bearer ${storedToken}` },
         signal: controller.signal,
       })
@@ -61,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const res = await fetch(`${AUTH_API_BASE}/api/auth/login`, {
+    const res = await fetch(`/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -74,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (username: string, password: string) => {
-    const res = await fetch(`${AUTH_API_BASE}/api/auth/register`, {
+    const res = await fetch(`/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),

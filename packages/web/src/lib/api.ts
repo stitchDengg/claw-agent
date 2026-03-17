@@ -1,5 +1,3 @@
-const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL || "http://localhost:8001";
-
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("claw-token");
@@ -15,7 +13,7 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(path, {
     ...options,
     headers,
   });
