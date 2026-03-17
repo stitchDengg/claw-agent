@@ -51,9 +51,9 @@ RUN sed -i '/"@claw-agent\/agent"/d' package.json
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-scripts
 
-# Install prisma CLI and generate client in runner stage
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma --save-dev
-RUN npx prisma generate --schema=./prisma/schema.prisma
+# Install prisma CLI (pinned to v6) and generate client in runner stage
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma@^6.0.0 @prisma/client@^6.0.0
+RUN pnpm exec prisma generate --schema=./prisma/schema.prisma
 
 EXPOSE 8001
 CMD ["node", "dist/main.js"]
