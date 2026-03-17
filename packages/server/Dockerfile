@@ -23,13 +23,8 @@ COPY package.json pnpm-workspace.yaml ./
 COPY packages/agent/ packages/agent/
 COPY packages/server/ packages/server/
 
-# Build agent first (server depends on it)
 RUN pnpm build:agent
-
-# Generate Prisma client for build
 RUN cd packages/server && npx prisma generate
-
-# Build server
 RUN pnpm build:server
 
 # ---- Production ----
@@ -46,13 +41,11 @@ COPY .npmrc ./
 COPY --from=builder /app/packages/agent/dist ./node_modules/@claw-agent/agent/dist
 COPY --from=builder /app/packages/agent/package.json ./node_modules/@claw-agent/agent/package.json
 
-# Remove workspace dependency before pnpm install (agent is already copied manually)
+# Strip workspace dep (agent already copied above), then install prod deps
 RUN sed -i '/"@claw-agent\/agent"/d' package.json
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store NODE_ENV= pnpm install --ignore-scripts
 
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-scripts
-
-# Install prisma CLI (pinned to v6) and generate client in runner stage
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma@^6.0.0 @prisma/client@^6.0.0
+# Generate Prisma client (prisma CLI kept for runtime migrations)
 RUN pnpm exec prisma generate --schema=./prisma/schema.prisma
 
 EXPOSE 8001
