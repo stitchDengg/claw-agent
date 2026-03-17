@@ -41,8 +41,16 @@ COPY .npmrc ./
 COPY --from=builder /app/packages/agent/dist ./node_modules/@claw-agent/agent/dist
 COPY --from=builder /app/packages/agent/package.json ./node_modules/@claw-agent/agent/package.json
 
-# Strip workspace dep (agent already copied above), then install prod deps
+# Install prod deps for both server and agent
+# Remove workspace reference, then install server deps + agent deps together
 RUN sed -i '/"@claw-agent\/agent"/d' package.json
+COPY --from=builder /app/packages/agent/package.json ./packages-agent-package.json
+RUN node -e " \
+  const server = JSON.parse(require('fs').readFileSync('package.json','utf8')); \
+  const agent = JSON.parse(require('fs').readFileSync('packages-agent-package.json','utf8')); \
+  Object.assign(server.dependencies, agent.dependencies || {}); \
+  require('fs').writeFileSync('package.json', JSON.stringify(server, null, 2)); \
+" && rm packages-agent-package.json
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store NODE_ENV= pnpm install --ignore-scripts
 
 # Generate Prisma client (prisma CLI kept for runtime migrations)
