@@ -26,10 +26,8 @@ COPY packages/server/ packages/server/
 # Build agent first (server depends on it)
 RUN pnpm build:agent
 
-# Generate Prisma client, then copy to a fixed location (pnpm symlinks don't survive Docker COPY)
-RUN cd packages/server && npx prisma generate && \
-    mkdir -p /app/_generated_prisma && \
-    cp -rL $(find /app/node_modules -path '*/.prisma/client' -type d | head -1)/.. /app/_generated_prisma/
+# Generate Prisma client for build
+RUN cd packages/server && npx prisma generate
 
 # Build server
 RUN pnpm build:server
@@ -50,11 +48,9 @@ COPY --from=builder /app/packages/agent/package.json ./node_modules/@claw-agent/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --ignore-scripts
 
-# Install prisma CLI for migrations
+# Install prisma CLI and generate client directly in runner
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm add prisma --save-dev
-
-# Copy generated Prisma client into node_modules
-COPY --from=builder /app/_generated_prisma/.prisma ./node_modules/.prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 EXPOSE 8001
 CMD ["node", "dist/main.js"]
