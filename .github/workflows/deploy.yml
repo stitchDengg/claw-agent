@@ -60,6 +60,9 @@ jobs:
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             echo "CORS_ORIGIN=http://localhost:3000" >> .env
 
+            # 清理 Docker 构建缓存（确保 Prisma client 等步骤不使用旧缓存）
+            docker builder prune -af
+
             # 构建并启动服务
             docker compose up -d --build --remove-orphans
 
