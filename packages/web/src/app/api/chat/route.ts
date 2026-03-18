@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: "POST",
       headers,
+      signal: req.signal,
       body: JSON.stringify({
         conversationId: body.conversationId,
         message: lastUserMessage.content,

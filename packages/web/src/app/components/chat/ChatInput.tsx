@@ -44,7 +44,7 @@ export default function ChatInput({
       <form onSubmit={onSubmit} className="max-w-3xl mx-auto">
         <div
           className={cn(
-            "flex items-end gap-2 bg-card border border-border rounded-2xl px-3 md:px-4 py-2.5 md:py-3 transition-all",
+            "flex items-center gap-2 bg-card border border-border rounded-2xl px-3 md:px-4 py-2.5 md:py-3 transition-all",
             "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
           )}
         >

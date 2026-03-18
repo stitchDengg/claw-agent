@@ -69,4 +69,10 @@ jobs:
             # 清理旧镜像
             docker image prune -f
 
+            # 冒烟测试：验证服务是否真正可用
+            echo ""
+            echo "🧪 Running post-deploy smoke tests..."
+            chmod +x scripts/smoke-test.sh
+            bash scripts/smoke-test.sh
+
             echo "✅ Deploy complete!"

@@ -20,6 +20,10 @@ export function createAgent(config: AgentConfig) {
     anthropicApiUrl: config.baseUrl,
     modelName: config.modelName || 'MiniMax-M2.5',
     maxTokens: config.maxTokens || 4096,
+    streaming: true,
+    clientOptions: {
+      timeout: 60_000, // 60s timeout for API calls
+    },
   });
 
   const llmWithTools = llm.bindTools(allTools);

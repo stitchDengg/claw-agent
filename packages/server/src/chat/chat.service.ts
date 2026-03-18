@@ -1,38 +1,65 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { AIMessage, BaseMessage } from '@claw-agent/agent';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentService, ChatMessage } from './agent/agent.service';
 import { Response } from 'express';
 
-function splitIntoChunks(text: string, chunkSize = 20): string[] {
-  const chunks: string[] = [];
-  let i = 0;
-
-  while (i < text.length) {
-    let end = Math.min(i + chunkSize, text.length);
-
-    if (end < text.length) {
-      for (let j = end; j > i; j--) {
-        if ('。，！？；：\n,.!?;: '.includes(text[j - 1])) {
-          end = j;
-          break;
-        }
-      }
-    }
-
-    chunks.push(text.slice(i, end));
-    i = end;
-  }
-
-  return chunks;
-}
+const STREAM_TIMEOUT_MS = 60_000; // 60s total stream timeout
+const CHUNK_SPLIT_THRESHOLD = 10; // Split chunks larger than this many characters
+const CHUNK_SPLIT_SIZE = 6; // Split into pieces of this size
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(
     private prisma: PrismaService,
     private agentService: AgentService,
   ) {}
+
+  /**
+   * Write a token to the SSE response, splitting large chunks into smaller
+   * pieces for smoother streaming on the frontend.
+   */
+  private async writeTokenChunked(res: Response, token: string): Promise<void> {
+    if (token.length <= CHUNK_SPLIT_THRESHOLD) {
+      res.write(`0:${JSON.stringify(token)}\n`);
+      return;
+    }
+
+    // Split large token into smaller chunks for smoother output
+    for (let i = 0; i < token.length; i += CHUNK_SPLIT_SIZE) {
+      const piece = token.slice(i, i + CHUNK_SPLIT_SIZE);
+      res.write(`0:${JSON.stringify(piece)}\n`);
+      // Yield to the event loop so Node can flush the write buffer
+      if (i + CHUNK_SPLIT_SIZE < token.length) {
+        await new Promise<void>((resolve) => setImmediate(resolve));
+      }
+    }
+  }
+
+  /**
+   * Extract text token from a stream chunk's content.
+   * Content can be a plain string or an array of blocks.
+   * Supports: {type:'text', text:'...'} and {type:'thinking', thinking:'...'} (MiniMax)
+   */
+  private extractToken(content: unknown): string {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (Array.isArray(content)) {
+      const texts: string[] = [];
+      for (const block of content) {
+        if (typeof block === 'object' && block !== null) {
+          const b = block as Record<string, unknown>;
+          if (b.type === 'text' && typeof b.text === 'string') {
+            texts.push(b.text);
+          }
+        }
+      }
+      return texts.join('');
+    }
+    return '';
+  }
 
   async chat(
     conversationId: string,
@@ -74,40 +101,73 @@ export class ChatService {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    let streamEnded = false;
+    const endStream = () => {
+      if (!streamEnded) {
+        streamEnded = true;
+        res.end();
+      }
+    };
+
+    // Guard against client disconnect
+    res.on('close', () => {
+      this.logger.log(`[Chat] Client disconnected for conversation ${conversationId}`);
+      streamEnded = true;
+    });
+
     try {
       const agent = this.agentService.getAgent();
-      const result = await agent.invoke({ messages: lcMessages });
-      const finalMessages: BaseMessage[] = result.messages;
 
-      // 提取最后一条 AI 消息
-      let aiResponse = '';
-      for (let i = finalMessages.length - 1; i >= 0; i--) {
-        const msg = finalMessages[i];
-        if (msg instanceof AIMessage && msg.content) {
-          aiResponse = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-          break;
+      this.logger.log(`[Chat] Starting stream for conversation ${conversationId}`);
+
+      // 使用 streamEvents 实现真正的流式输出（带超时）
+      let fullText = '';
+      const eventStream = agent.streamEvents(
+        { messages: lcMessages },
+        { version: 'v2' },
+      );
+
+      // Wrap the stream iteration with a timeout
+      const streamPromise = (async () => {
+        for await (const event of eventStream) {
+          if (streamEnded) break;
+
+          // 监听 LLM 的流式 token 输出
+          if (
+            event.event === 'on_chat_model_stream' &&
+            event.data?.chunk
+          ) {
+            const chunk = event.data.chunk;
+            const token = this.extractToken(chunk.content);
+            if (token) {
+              fullText += token;
+              await this.writeTokenChunked(res, token);
+            }
+          }
         }
-      }
+      })();
 
-      if (aiResponse) {
-        // 分块输出
-        const chunks = splitIntoChunks(aiResponse);
-        for (const chunk of chunks) {
-          res.write(`0:${JSON.stringify(chunk)}\n`);
-        }
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Stream timeout: no response within 60s')), STREAM_TIMEOUT_MS);
+      });
 
-        // 持久化 AI 响应
+      await Promise.race([streamPromise, timeoutPromise]);
+
+      this.logger.log(`[Chat] Stream completed, fullText length: ${fullText.length}`);
+
+      // 流式输出完成后，持久化 assistant 消息
+      if (fullText) {
         await this.prisma.message.create({
           data: {
             conversationId,
             role: 'assistant',
-            content: aiResponse,
+            content: fullText,
           },
         });
 
         // 如果是第一条消息，自动设置对话标题
         if (conversation.messages.length === 0) {
-          const title = aiResponse.replace(/\n/g, ' ').slice(0, 30);
+          const title = fullText.replace(/\n/g, ' ').slice(0, 30);
           await this.prisma.conversation.update({
             where: { id: conversationId },
             data: { title },
@@ -122,21 +182,26 @@ export class ChatService {
       });
 
       // 发送结束信号
-      const finishData = {
-        finishReason: 'stop',
-        usage: { promptTokens: 0, completionTokens: 0 },
-      };
-      res.write(`d:${JSON.stringify(finishData)}\n`);
-      res.end();
+      if (!streamEnded) {
+        const finishData = {
+          finishReason: 'stop',
+          usage: { promptTokens: 0, completionTokens: 0 },
+        };
+        res.write(`d:${JSON.stringify(finishData)}\n`);
+      }
+      endStream();
     } catch (err) {
-      const errorMsg = `❌ Agent 执行出错: ${err instanceof Error ? err.message : String(err)}`;
-      res.write(`0:${JSON.stringify(errorMsg)}\n`);
-      const finishData = {
-        finishReason: 'error',
-        usage: { promptTokens: 0, completionTokens: 0 },
-      };
-      res.write(`d:${JSON.stringify(finishData)}\n`);
-      res.end();
+      this.logger.error(`[Chat] Agent error: ${err instanceof Error ? err.message : String(err)}`);
+      if (!streamEnded) {
+        const errorMsg = `❌ Agent 执行出错: ${err instanceof Error ? err.message : String(err)}`;
+        res.write(`0:${JSON.stringify(errorMsg)}\n`);
+        const finishData = {
+          finishReason: 'error',
+          usage: { promptTokens: 0, completionTokens: 0 },
+        };
+        res.write(`d:${JSON.stringify(finishData)}\n`);
+      }
+      endStream();
     }
   }
 

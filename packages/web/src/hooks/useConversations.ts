@@ -35,7 +35,6 @@ function toConversation(api: ApiConversation): Conversation {
 export function useConversations() {
   const { token } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeId, setActiveId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch conversations from API on mount / token change
@@ -48,24 +47,7 @@ export function useConversations() {
       try {
         const list = await apiFetch<ApiConversation[]>("/api/conversations");
         if (cancelled) return;
-
-        if (list.length > 0) {
-          setConversations(list.map(toConversation));
-          setActiveId((prev) => {
-            // Keep current activeId if it still exists in the list
-            if (prev && list.some((c) => c.id === prev)) return prev;
-            return list[0].id;
-          });
-        } else {
-          // Auto-create a default conversation
-          const created = await apiFetch<ApiConversation>("/api/conversations", {
-            method: "POST",
-            body: JSON.stringify({ title: "新对话" }),
-          });
-          if (cancelled) return;
-          setConversations([toConversation(created)]);
-          setActiveId(created.id);
-        }
+        setConversations(list.map(toConversation));
       } catch (err) {
         console.error("Failed to load conversations:", err);
       } finally {
@@ -76,7 +58,7 @@ export function useConversations() {
     return () => { cancelled = true; };
   }, [token]);
 
-  const createConversation = useCallback(async () => {
+  const createConversation = useCallback(async (): Promise<string> => {
     try {
       const created = await apiFetch<ApiConversation>("/api/conversations", {
         method: "POST",
@@ -84,7 +66,6 @@ export function useConversations() {
       });
       const conv = toConversation(created);
       setConversations((prev) => [conv, ...prev]);
-      setActiveId(conv.id);
       return conv.id;
     } catch (err) {
       console.error("Failed to create conversation:", err);
@@ -96,27 +77,12 @@ export function useConversations() {
     async (id: string) => {
       try {
         await apiFetch<void>(`/api/conversations/${id}`, { method: "DELETE" });
-        setConversations((prev) => {
-          const filtered = prev.filter((c) => c.id !== id);
-          if (filtered.length === 0) {
-            // Will trigger a re-create on next render via the effect
-            return filtered;
-          }
-          return filtered;
-        });
-        setActiveId((prev) => {
-          if (prev === id) {
-            // Switch to first remaining, or empty
-            const remaining = conversations.filter((c) => c.id !== id);
-            return remaining.length > 0 ? remaining[0].id : "";
-          }
-          return prev;
-        });
+        setConversations((prev) => prev.filter((c) => c.id !== id));
       } catch (err) {
         console.error("Failed to delete conversation:", err);
       }
     },
-    [conversations]
+    []
   );
 
   const updateTitle = useCallback(async (id: string, title: string) => {
@@ -166,8 +132,6 @@ export function useConversations() {
 
   return {
     conversations,
-    activeId,
-    setActiveId,
     createConversation,
     deleteConversation,
     updateTitle,

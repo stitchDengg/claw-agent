@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageSquarePlus, Trash2, Bot, LogOut, User } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
 import { Conversation } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface SidebarProps {
   conversations: Conversation[];
-  activeId: string;
-  onSelect: (id: string) => void;
+  activeId?: string;
+  onSelect?: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
   isCollapsed: boolean;
@@ -28,6 +29,20 @@ export default function Sidebar({
   username,
   onLogout,
 }: SidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Determine active conversation from props or from URL
+  const currentActiveId = activeId ?? pathname?.match(/^\/chat\/(.+)/)?.[1] ?? "";
+
+  const handleSelect = (id: string) => {
+    if (onSelect) {
+      onSelect(id);
+    } else {
+      router.push(`/chat/${id}`);
+    }
+  };
+
   return (
     <aside
       className={cn(
@@ -60,10 +75,10 @@ export default function Sidebar({
           {conversations.map((conv) => (
             <div
               key={conv.id}
-              onClick={() => onSelect(conv.id)}
+              onClick={() => handleSelect(conv.id)}
               className={cn(
                 "group flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer transition-colors min-h-[44px]",
-                activeId === conv.id
+                currentActiveId === conv.id
                   ? "bg-primary/10 text-primary"
                   : "hover:bg-accent text-muted-foreground hover:text-accent-foreground"
               )}

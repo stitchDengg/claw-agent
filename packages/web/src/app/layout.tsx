@@ -4,6 +4,7 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ConversationsProvider } from "@/contexts/ConversationsContext";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -18,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
-      <body>
+    <html lang="zh-CN" className={cn("font-sans h-full", geist.variable)} suppressHydrationWarning>
+      <body className="m-0 p-0 h-full overflow-hidden">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -27,7 +28,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
+            <ConversationsProvider>
+              {children}
+            </ConversationsProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
