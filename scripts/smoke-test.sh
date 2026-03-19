@@ -13,7 +13,7 @@ MAX_WAIT="${MAX_WAIT:-60}"
 PASSED=0
 FAILED=0
 TIMESTAMP=$(date +%s)
-TEST_EMAIL="smoketest_${TIMESTAMP}@test.local"
+TEST_USERNAME="smoke${TIMESTAMP}"
 TEST_PASSWORD="SmokePass_${TIMESTAMP}!"
 
 # 颜色输出
@@ -78,7 +78,7 @@ check_status "GET ${BACKEND_URL}/health" 200 "$STATUS" || exit 1
 REGISTER_RESP=$(curl -s -w '\n%{http_code}' \
   -X POST "${BASE_URL}/api/auth/register" \
   -H 'Content-Type: application/json' \
-  -d "{\"email\":\"${TEST_EMAIL}\",\"password\":\"${TEST_PASSWORD}\",\"name\":\"SmokeTest\"}")
+  -d "{\"username\":\"${TEST_USERNAME}\",\"password\":\"${TEST_PASSWORD}\"}")
 REGISTER_BODY=$(echo "$REGISTER_RESP" | sed '$d')
 STATUS=$(echo "$REGISTER_RESP" | tail -1)
 check_status "POST /api/auth/register" 200 "$STATUS" || check_status "POST /api/auth/register (201)" 201 "$STATUS" || exit 1
@@ -89,7 +89,7 @@ check_status "POST /api/auth/register" 200 "$STATUS" || check_status "POST /api/
 LOGIN_RESP=$(curl -s -w '\n%{http_code}' \
   -X POST "${BASE_URL}/api/auth/login" \
   -H 'Content-Type: application/json' \
-  -d "{\"email\":\"${TEST_EMAIL}\",\"password\":\"${TEST_PASSWORD}\"}")
+  -d "{\"username\":\"${TEST_USERNAME}\",\"password\":\"${TEST_PASSWORD}\"}")
 LOGIN_BODY=$(echo "$LOGIN_RESP" | sed '$d')
 STATUS=$(echo "$LOGIN_RESP" | tail -1)
 check_status "POST /api/auth/login" 200 "$STATUS" || exit 1
