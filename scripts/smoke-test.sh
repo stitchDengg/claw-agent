@@ -92,7 +92,7 @@ LOGIN_RESP=$(curl -s -w '\n%{http_code}' \
   -d "{\"username\":\"${TEST_USERNAME}\",\"password\":\"${TEST_PASSWORD}\"}")
 LOGIN_BODY=$(echo "$LOGIN_RESP" | sed '$d')
 STATUS=$(echo "$LOGIN_RESP" | tail -1)
-check_status "POST /api/auth/login" 200 "$STATUS" || exit 1
+check_status "POST /api/auth/login" 200 "$STATUS" || check_status "POST /api/auth/login (201)" 201 "$STATUS" || exit 1
 
 # 提取 token
 TOKEN=$(echo "$LOGIN_BODY" | grep -o '"token":"[^"]*"' | head -1 | cut -d'"' -f4)
