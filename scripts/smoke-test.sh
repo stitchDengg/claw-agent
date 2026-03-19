@@ -47,19 +47,21 @@ if [ $ELAPSED -ge $MAX_WAIT ]; then
 fi
 
 # ----------------------------------------------------------
-# Helper: 发起请求并检查状态码
+# Helper: 检查状态码是否在可接受列表中
+# 用法: check_status "label" actual_code expected1 [expected2 ...]
 # ----------------------------------------------------------
 check_status() {
   local label="$1"
-  local expected="$2"
-  local actual="$3"
-  if [ "$actual" -eq "$expected" ] 2>/dev/null; then
-    log_pass "$label (HTTP $actual)"
-    return 0
-  else
-    log_fail "$label — expected HTTP $expected, got HTTP $actual"
-    return 1
-  fi
+  local actual="$2"
+  shift 2
+  for expected in "$@"; do
+    if [ "$actual" -eq "$expected" ] 2>/dev/null; then
+      log_pass "$label (HTTP $actual)"
+      return 0
+    fi
+  done
+  log_fail "$label — expected HTTP $*, got HTTP $actual"
+  return 1
 }
 
 # ----------------------------------------------------------
@@ -70,7 +72,7 @@ echo "🔍 Running smoke tests..."
 echo "---"
 
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' "${BACKEND_URL}/health")
-check_status "GET ${BACKEND_URL}/health" 200 "$STATUS" || exit 1
+check_status "GET ${BACKEND_URL}/health" "$STATUS" 200 || exit 1
 
 # ----------------------------------------------------------
 # 3. POST /api/auth/register
@@ -81,7 +83,7 @@ REGISTER_RESP=$(curl -s -w '\n%{http_code}' \
   -d "{\"username\":\"${TEST_USERNAME}\",\"password\":\"${TEST_PASSWORD}\"}")
 REGISTER_BODY=$(echo "$REGISTER_RESP" | sed '$d')
 STATUS=$(echo "$REGISTER_RESP" | tail -1)
-check_status "POST /api/auth/register" 200 "$STATUS" || check_status "POST /api/auth/register (201)" 201 "$STATUS" || exit 1
+check_status "POST /api/auth/register" "$STATUS" 200 201 || exit 1
 
 # ----------------------------------------------------------
 # 4. POST /api/auth/login
@@ -92,7 +94,7 @@ LOGIN_RESP=$(curl -s -w '\n%{http_code}' \
   -d "{\"username\":\"${TEST_USERNAME}\",\"password\":\"${TEST_PASSWORD}\"}")
 LOGIN_BODY=$(echo "$LOGIN_RESP" | sed '$d')
 STATUS=$(echo "$LOGIN_RESP" | tail -1)
-check_status "POST /api/auth/login" 200 "$STATUS" || check_status "POST /api/auth/login (201)" 201 "$STATUS" || exit 1
+check_status "POST /api/auth/login" "$STATUS" 200 201 || exit 1
 
 # 提取 token
 TOKEN=$(echo "$LOGIN_BODY" | grep -o '"token":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -108,7 +110,7 @@ log_info "Token extracted successfully"
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
   -X GET "${BASE_URL}/api/auth/me" \
   -H "Authorization: Bearer ${TOKEN}")
-check_status "GET /api/auth/me" 200 "$STATUS" || exit 1
+check_status "GET /api/auth/me" "$STATUS" 200 || exit 1
 
 # ----------------------------------------------------------
 # 6. POST /api/conversations（创建对话）
@@ -120,7 +122,7 @@ CONV_RESP=$(curl -s -w '\n%{http_code}' \
   -d '{"title":"Smoke Test Conversation"}')
 CONV_BODY=$(echo "$CONV_RESP" | sed '$d')
 STATUS=$(echo "$CONV_RESP" | tail -1)
-check_status "POST /api/conversations" 200 "$STATUS" || check_status "POST /api/conversations (201)" 201 "$STATUS" || exit 1
+check_status "POST /api/conversations" "$STATUS" 200 201 || exit 1
 
 # 提取 conversation id
 CONV_ID=$(echo "$CONV_BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
@@ -136,7 +138,7 @@ log_info "Conversation created: ${CONV_ID}"
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
   -X GET "${BASE_URL}/api/conversations" \
   -H "Authorization: Bearer ${TOKEN}")
-check_status "GET /api/conversations" 200 "$STATUS" || exit 1
+check_status "GET /api/conversations" "$STATUS" 200 || exit 1
 
 # ----------------------------------------------------------
 # 8. GET /api/conversations/:id（对话详情）
@@ -144,7 +146,7 @@ check_status "GET /api/conversations" 200 "$STATUS" || exit 1
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
   -X GET "${BASE_URL}/api/conversations/${CONV_ID}" \
   -H "Authorization: Bearer ${TOKEN}")
-check_status "GET /api/conversations/${CONV_ID}" 200 "$STATUS" || exit 1
+check_status "GET /api/conversations/${CONV_ID}" "$STATUS" 200 || exit 1
 
 # ----------------------------------------------------------
 # 9. POST /api/chat（聊天流式响应）
@@ -155,7 +157,7 @@ CHAT_STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
   -H 'Content-Type: application/json' \
   -H "Authorization: Bearer ${TOKEN}" \
   -d "{\"conversationId\":\"${CONV_ID}\",\"message\":\"Hello, this is a smoke test.\"}")
-check_status "POST /api/chat" 200 "$CHAT_STATUS" || exit 1
+check_status "POST /api/chat" "$CHAT_STATUS" 200 || exit 1
 
 # ----------------------------------------------------------
 # 10. DELETE /api/conversations/:id（清理测试数据）
@@ -163,7 +165,7 @@ check_status "POST /api/chat" 200 "$CHAT_STATUS" || exit 1
 STATUS=$(curl -s -o /dev/null -w '%{http_code}' \
   -X DELETE "${BASE_URL}/api/conversations/${CONV_ID}" \
   -H "Authorization: Bearer ${TOKEN}")
-check_status "DELETE /api/conversations/${CONV_ID}" 200 "$STATUS" || exit 1
+check_status "DELETE /api/conversations/${CONV_ID}" "$STATUS" 200 204 || exit 1
 
 # ----------------------------------------------------------
 # 汇总结果
