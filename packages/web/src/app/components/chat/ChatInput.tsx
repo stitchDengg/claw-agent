@@ -1,9 +1,7 @@
 "use client";
 
-import { Send, Square, Paperclip } from "lucide-react";
+import { ArrowUp, Square, Paperclip } from "lucide-react";
 import { useRef, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 interface ChatInputProps {
   input: string;
@@ -40,60 +38,53 @@ export default function ChatInput({
   };
 
   return (
-    <div className="border-t border-border bg-background/80 backdrop-blur-sm p-3 md:p-4 shrink-0">
-      <form onSubmit={onSubmit} className="max-w-3xl mx-auto">
-        <div
-          className={cn(
-            "flex items-center gap-2 bg-card border border-border rounded-2xl px-3 md:px-4 py-2.5 md:py-3 transition-all",
-            "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20"
-          )}
-        >
-          {/* Attach button */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 md:h-9 md:w-9 shrink-0 text-muted-foreground hover:text-foreground"
-          >
-            <Paperclip size={18} />
-          </Button>
+    <div className="w-full flex flex-col items-center pb-6 px-6 shrink-0">
+      <form onSubmit={onSubmit} className="w-full max-w-[720px]">
+        <div className="relative group">
+          <div className="bg-card rounded-2xl border border-border hover:border-muted-foreground/30 transition-colors flex items-center p-1.5 pl-5 focus-within:border-muted-foreground/50">
+            {/* Input */}
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入消息..."
+              rows={1}
+              className="flex-1 bg-transparent border-none text-[14px] text-foreground placeholder-weak-foreground focus:ring-0 outline-none resize-none max-h-[200px] leading-relaxed"
+            />
 
-          {/* Input */}
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
-            rows={1}
-            className="flex-1 bg-transparent text-sm text-foreground resize-none
-                       outline-none placeholder:text-muted-foreground max-h-[200px] leading-relaxed"
-          />
+            <div className="flex items-center gap-2 pr-1">
+              {/* Attach button */}
+              <button
+                type="button"
+                className="p-2 text-weak-foreground hover:text-muted-foreground transition-colors"
+              >
+                <Paperclip size={20} />
+              </button>
 
-          {/* Send / Stop button */}
-          {isLoading ? (
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={onStop}
-              className="h-10 w-10 md:h-9 md:w-9 shrink-0"
-            >
-              <Square size={16} />
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!input.trim()}
-              className="h-10 w-10 md:h-9 md:w-9 shrink-0"
-            >
-              <Send size={16} />
-            </Button>
-          )}
+              {/* Send / Stop button */}
+              {isLoading ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="w-9 h-9 flex items-center justify-center bg-red-500/20 text-red-400 rounded-full hover:bg-red-500/30 transition-all active:scale-95"
+                >
+                  <Square size={16} />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim()}
+                  className="w-9 h-9 flex items-center justify-center bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  <ArrowUp size={18} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
-        <p className="text-center text-[11px] text-muted-foreground mt-2">
+        <p className="mt-3 text-center text-[11px] text-weak-foreground tracking-wide">
           Claw Agent 可能会犯错，请核实重要信息。
         </p>
       </form>

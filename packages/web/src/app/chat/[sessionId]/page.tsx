@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import AppShell from "../../components/AppShell";
 import ChatMessage from "../../components/chat/ChatMessage";
 import ChatInput from "../../components/chat/ChatInput";
@@ -89,15 +89,9 @@ function ChatSessionContent({
   );
 
   // ---- Auto-scroll logic ----
-  // When the user sends a new message: scroll so the user message sits at the top of the viewport.
-  // During streaming: only start following the bottom once the reply grows past one viewport height.
-  // After completion: smooth scroll to bottom.
+  // Batch all DOM reads, then write in a single RAF to avoid layout thrashing.
   const rafRef = useRef<number | null>(null);
   const prevMessagesLenRef = useRef(messages.length);
-  // When the user sends a message, we pin the scroll so the user message is at
-  // the viewport top. We store the scrollHeight at the time of pinning so we can
-  // detect when enough NEW content has been added to justify auto-following.
-  // -1 = "pending pin" (RAF scheduled), null = no pin, >0 = pinned scrollHeight.
   const pinnedScrollHeightRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -112,39 +106,37 @@ function ChatSessionContent({
       messages.length > prevMessagesLenRef.current && lastMsg?.role === "user";
 
     if (isNewUserMessage) {
-      // User just sent a message — mark as "pending pin" immediately
       pinnedScrollHeightRef.current = -1;
-      // Wait a frame so the DOM has the new message rendered
-      requestAnimationFrame(() => {
+      // Single RAF: batch read then write
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
         const el = lastUserMsgRef.current;
-        if (el && scrollContainer) {
-          const containerRect = scrollContainer.getBoundingClientRect();
-          const elRect = el.getBoundingClientRect();
-          const offset = elRect.top - containerRect.top + scrollContainer.scrollTop;
-          scrollContainer.scrollTo({ top: offset });
-          // Record the scrollHeight at pin time — we only auto-follow once
-          // new content has grown by more than one viewport height from here.
-          pinnedScrollHeightRef.current = scrollContainer.scrollHeight;
-        }
+        if (!el || !scrollContainer) return;
+        // Batch reads
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const scrollTop = scrollContainer.scrollTop;
+        const scrollHeight = scrollContainer.scrollHeight;
+        // Single write
+        const offset = elRect.top - containerRect.top + scrollTop;
+        scrollContainer.scrollTo({ top: offset });
+        pinnedScrollHeightRef.current = scrollHeight;
       });
     } else if (isLoading) {
       const pinValue = pinnedScrollHeightRef.current;
-      // -1 means RAF hasn't fired yet — don't scroll
-      // > 0 means pinned — only follow once new content exceeds one viewport
+      // Batch reads outside RAF
+      const scrollHeight = scrollContainer.scrollHeight;
+      const clientHeight = scrollContainer.clientHeight;
       const shouldFollow =
         pinValue === null ||
-        (pinValue > 0 &&
-          scrollContainer.scrollHeight - pinValue > scrollContainer.clientHeight);
+        (pinValue > 0 && scrollHeight - pinValue > clientHeight);
 
-      if (shouldFollow) {
-        if (rafRef.current === null) {
-          rafRef.current = requestAnimationFrame(() => {
-            rafRef.current = null;
-            scrollContainer.scrollTo({
-              top: scrollContainer.scrollHeight,
-            });
-          });
-        }
+      if (shouldFollow && rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          scrollContainer.scrollTo({ top: scrollContainer.scrollHeight });
+        });
       }
     } else {
       // After completion: smooth scroll to bottom, reset pin
@@ -171,9 +163,12 @@ function ChatSessionContent({
     };
   }, []);
 
-  const handleSuggestionClick = (prompt: string) => {
-    setInput(prompt);
-  };
+  const handleSuggestionClick = useCallback(
+    (prompt: string) => {
+      setInput(prompt);
+    },
+    [setInput]
+  );
 
   const currentConv = conversations.find((c) => c.id === sessionId);
 
@@ -186,6 +181,13 @@ function ChatSessionContent({
     }
   }
 
+  // Pre-compute streaming message id outside the map to avoid inline recalculation
+  const streamingMessageId = useMemo(() => {
+    if (!isLoading) return null;
+    const lastMsg = messages[messages.length - 1];
+    return lastMsg?.role === "assistant" ? lastMsg.id : null;
+  }, [isLoading, messages]);
+
   return (
     <>
       {/* Messages */}
@@ -196,7 +198,7 @@ function ChatSessionContent({
         ) : messages.length === 0 ? (
           <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
         ) : (
-          <div className="max-w-3xl mx-auto py-4 px-2 md:px-4 space-y-2">
+          <div className="max-w-[720px] mx-auto px-6 pt-10 pb-40 space-y-12">
             {messages.map((message, index) => (
               <div
                 key={message.id}
@@ -205,11 +207,7 @@ function ChatSessionContent({
                 <ChatMessage
                   role={message.role as "user" | "assistant"}
                   content={message.content}
-                  isStreaming={
-                    isLoading &&
-                    message.id === messages[messages.length - 1]?.id &&
-                    message.role === "assistant"
-                  }
+                  isStreaming={message.id === streamingMessageId}
                 />
               </div>
             ))}

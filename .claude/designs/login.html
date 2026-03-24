@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Claw Agent - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-bright": "#39393b",
+              "primary-container": "#d4d4d4",
+              "on-surface-variant": "#c6c6c6",
+              "on-tertiary-fixed": "#ffffff",
+              "on-primary-fixed-variant": "#e2e2e2",
+              "on-secondary-fixed-variant": "#3a3b42",
+              "primary": "#ffffff",
+              "on-surface": "#e5e1e4",
+              "on-primary-fixed": "#ffffff",
+              "surface-variant": "#353437",
+              "surface-container-highest": "#353437",
+              "on-tertiary-fixed-variant": "#e3e1ec",
+              "inverse-surface": "#e5e1e4",
+              "on-secondary": "#1a1b22",
+              "outline": "#919191",
+              "surface-container-lowest": "#0e0e10",
+              "on-error": "#690005",
+              "tertiary-container": "#909099",
+              "secondary-fixed": "#c6c6cf",
+              "primary-fixed": "#5d5f5f",
+              "error-container": "#93000a",
+              "tertiary": "#e3e1ec",
+              "secondary-container": "#45464e",
+              "surface-dim": "#131315",
+              "surface-container-high": "#2a2a2c",
+              "surface-container": "#201f22",
+              "secondary-fixed-dim": "#aaaab3",
+              "on-primary": "#1a1c1c",
+              "outline-variant": "#474747",
+              "tertiary-fixed": "#5d5e66",
+              "background": "#09090b",
+              "on-background": "#e5e1e4",
+              "surface": "#09090b",
+              "on-error-container": "#ffdad6",
+              "surface-tint": "#c6c6c7",
+              "secondary": "#c6c6cf",
+              "inverse-primary": "#5d5f5f",
+              "on-primary-container": "#000000",
+              "surface-container-low": "#111113",
+              "error": "#ffb4ab",
+              "on-secondary-fixed": "#1a1b22",
+              "tertiary-fixed-dim": "#46464e",
+              "on-tertiary": "#1a1b22",
+              "on-tertiary-container": "#000000",
+              "primary-fixed-dim": "#454747",
+              "on-secondary-container": "#e2e1eb",
+              "inverse-on-surface": "#313032"
+            },
+            fontFamily: {
+              "headline": ["Inter", "sans-serif"],
+              "body": ["Inter", "sans-serif"],
+              "label": ["Inter", "sans-serif"]
+            },
+            borderRadius: {
+                "DEFAULT": "0.125rem", 
+                "lg": "0.5rem", 
+                "xl": "0.5rem", 
+                "full": "0.75rem"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b;
+            color: #fafafa;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-[#09090b] selection:bg-primary selection:text-surface-container-low">
+<!-- Top Navigation suppressed per "Destination Rule" (Transactional Page) -->
+<main class="w-full flex items-center justify-center p-6">
+<!-- Centered Login Card -->
+<div class="w-full max-w-[380px] bg-[#111113] p-10 flex flex-col items-stretch">
+<!-- Branding & Title -->
+<div class="mb-8">
+<span class="block text-[11px] font-medium uppercase tracking-[0.1em] text-[#a1a1aa] mb-2 font-label">
+                    Claw Agent
+                </span>
+<h1 class="text-[24px] font-semibold text-[#fafafa] tracking-tight">
+                    欢迎回来
+                </h1>
+</div>
+<!-- Login Form -->
+<form action="#" class="flex flex-col" method="POST">
+<!-- Username Field -->
+<div class="flex flex-col gap-1.5 mb-5">
+<label class="text-[13px] text-[#71717a] font-label tracking-wide" for="username">
+                        用户名
+                    </label>
+<input class="h-[44px] bg-[#18181b] border border-[#27272a] rounded-lg px-4 text-[#fafafa] placeholder-[#3f3f46] focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-200" id="username" name="username" placeholder="请输入用户名" type="text"/>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-1.5 mb-7">
+<label class="text-[13px] text-[#71717a] font-label tracking-wide" for="password">
+                        密码
+                    </label>
+<div class="relative">
+<input class="w-full h-[44px] bg-[#18181b] border border-[#27272a] rounded-lg px-4 pr-10 text-[#fafafa] placeholder-[#3f3f46] focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-200" id="password" name="password" placeholder="请输入密码" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-[#3f3f46] hover:text-[#a1a1aa] transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">
+                                visibility
+                            </span>
+</button>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="h-[44px] bg-[#fafafa] text-[#09090b] font-medium rounded-lg hover:opacity-90 active:scale-[0.98] transition-all duration-200 text-sm" type="submit">
+                    登录
+                </button>
+</form>
+<!-- Card Footer -->
+<div class="mt-6 flex justify-center gap-1.5 text-[13px] font-label tracking-wide">
+<span class="text-[#71717a]">还没有账号？</span>
+<a class="text-[#fafafa] font-medium hover:underline transition-all" href="#">注册</a>
+</div>
+</div>
+</main>
+<!-- Shared Footer Anchor -->
+<footer class="fixed bottom-0 w-full flex justify-center gap-4 py-8 text-[13px] font-['Inter'] tracking-wide">
+<!-- Content from JSON -->
+<p class="text-[#71717a]">© 2024 Claw Agent</p>
+</footer>
+</body></html>

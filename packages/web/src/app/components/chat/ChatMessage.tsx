@@ -1,18 +1,12 @@
 "use client";
 
-import { Bot, User, Copy, Check } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import { useState, useCallback, memo, useMemo, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import {
-  oneDark,
-  oneLight,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useTheme } from "next-themes";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import type { Components } from "react-markdown";
 
 interface ChatMessageProps {
@@ -68,16 +62,14 @@ function useThrottledValue(value: string, isStreaming: boolean, intervalMs = 100
 }
 
 // ---------------------------------------------------------------------------
-// CodeBlock (unchanged)
+// CodeBlock — always uses dark theme regardless of app theme
 // ---------------------------------------------------------------------------
-function CodeBlock({
+const CodeBlock = memo(function CodeBlock({
   language,
   code,
-  isDark,
 }: {
   language: string;
   code: string;
-  isDark: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -88,12 +80,14 @@ function CodeBlock({
   }, [code]);
 
   return (
-    <div className="code-block-wrapper">
-      <div className="code-block-header">
-        <span className="code-block-lang">{language || "text"}</span>
+    <div className="bg-code-block-bg rounded-lg overflow-hidden border border-border my-3">
+      <div className="px-4 py-2 bg-code-block-header border-b border-border flex justify-between items-center">
+        <span className="text-[11px] font-mono text-[#71717a] uppercase tracking-wider">
+          {language || "text"}
+        </span>
         <button
           onClick={handleCopy}
-          className="code-copy-btn"
+          className="text-[#71717a] hover:text-[#a1a1aa] transition-colors flex items-center gap-1.5 text-[11px]"
           aria-label="Copy code"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -101,13 +95,15 @@ function CodeBlock({
         </button>
       </div>
       <SyntaxHighlighter
-        style={isDark ? oneDark : oneLight}
+        style={oneDark}
         language={language || "text"}
         PreTag="div"
         customStyle={{
           margin: 0,
-          borderRadius: "0 0 8px 8px",
+          borderRadius: 0,
           fontSize: "0.85em",
+          background: "var(--code-block-bg)",
+          padding: "1em",
         }}
         codeTagProps={{
           style: {
@@ -119,12 +115,12 @@ function CodeBlock({
       </SyntaxHighlighter>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
-// Markdown components — module-level, cached per isDark
+// Markdown components
 // ---------------------------------------------------------------------------
-function createMarkdownComponents(isDark: boolean): Components {
+function createMarkdownComponents(): Components {
   return {
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || "");
@@ -132,12 +128,12 @@ function createMarkdownComponents(isDark: boolean): Components {
 
       if (match) {
         return (
-          <CodeBlock language={match[1]} code={codeString} isDark={isDark} />
+          <CodeBlock language={match[1]} code={codeString} />
         );
       }
 
       return (
-        <code className={cn("inline-code", className)} {...props}>
+        <code className={cn("bg-muted px-1.5 py-0.5 rounded text-foreground text-[0.9em]", className)} {...props}>
           {children}
         </code>
       );
@@ -151,7 +147,7 @@ function createMarkdownComponents(isDark: boolean): Components {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="markdown-link"
+          className="text-foreground underline underline-offset-2 hover:text-foreground/80"
           {...props}
         >
           {children}
@@ -164,7 +160,7 @@ function createMarkdownComponents(isDark: boolean): Components {
         <img
           src={src}
           alt={alt || ""}
-          className="markdown-img"
+          className="max-w-full h-auto rounded-md my-2"
           loading="lazy"
           {...props}
         />
@@ -172,8 +168,8 @@ function createMarkdownComponents(isDark: boolean): Components {
     },
     table({ children, ...props }) {
       return (
-        <div className="table-wrapper">
-          <table className="markdown-table" {...props}>
+        <div className="overflow-x-auto my-3 rounded-md border border-border">
+          <table className="w-full border-collapse text-[0.9em]" {...props}>
             {children}
           </table>
         </div>
@@ -181,14 +177,14 @@ function createMarkdownComponents(isDark: boolean): Components {
     },
     th({ children, ...props }) {
       return (
-        <th className="markdown-th" {...props}>
+        <th className="bg-muted px-3 py-2 text-left font-semibold text-foreground border-b border-border" {...props}>
           {children}
         </th>
       );
     },
     td({ children, ...props }) {
       return (
-        <td className="markdown-td" {...props}>
+        <td className="px-3 py-2 border-b border-border/50" {...props}>
           {children}
         </td>
       );
@@ -196,13 +192,13 @@ function createMarkdownComponents(isDark: boolean): Components {
   };
 }
 
-// Cache markdown components per theme
-const componentsCache = new Map<boolean, Components>();
-function getMarkdownComponents(isDark: boolean): Components {
-  if (!componentsCache.has(isDark)) {
-    componentsCache.set(isDark, createMarkdownComponents(isDark));
+// Cache markdown components
+let cachedComponents: Components | null = null;
+function getMarkdownComponents(): Components {
+  if (!cachedComponents) {
+    cachedComponents = createMarkdownComponents();
   }
-  return componentsCache.get(isDark)!;
+  return cachedComponents;
 }
 
 const remarkPlugins = [remarkGfm];
@@ -216,8 +212,6 @@ function ChatMessageInner({
   isStreaming,
 }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
   const isUser = role === "user";
 
   // Throttle content updates during streaming to reduce Markdown re-parses
@@ -229,79 +223,58 @@ function ChatMessageInner({
     setTimeout(() => setCopied(false), 2000);
   }, [content]);
 
-  // Stable markdown components per theme (same for streaming and finished)
+  // Stable markdown components
   const markdownComponents = useMemo(
-    () => getMarkdownComponents(isDark),
-    [isDark]
+    () => getMarkdownComponents(),
+    []
   );
 
-  return (
-    <div
-      className={cn(
-        "animate-fade-in flex gap-3 px-2 md:px-4 py-3",
-        isUser ? "justify-end" : "justify-start"
-      )}
-    >
-      {/* Assistant avatar */}
-      {!isUser && (
-        <Avatar className="h-8 w-8 shrink-0 mt-1">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-            <Bot size={16} />
-          </AvatarFallback>
-        </Avatar>
-      )}
+  if (isUser) {
+    return (
+      <div className="animate-fade-in flex flex-col items-end space-y-2">
+        <div className="bg-user-bubble text-user-bubble-foreground px-[18px] py-[14px] rounded-2xl rounded-br-sm text-[14px] leading-relaxed max-w-[85%]">
+          <p className="whitespace-pre-wrap">{content}</p>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Message bubble */}
-      <div
-        className={cn(
-          "relative group max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3",
-          isUser
-            ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-card border border-border rounded-bl-sm"
-        )}
-      >
-        {isUser ? (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {content}
-          </p>
-        ) : (
-          <div
-            className={cn(
-              "markdown-body text-sm leading-relaxed",
-              isStreaming && "typing-cursor"
-            )}
+  return (
+    <div className="animate-fade-in flex flex-col space-y-4">
+      {/* Label */}
+      <div className="flex items-center gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-weak-foreground">
+          CLAW AGENT
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="relative group">
+        <div
+          className={cn(
+            "pl-0 text-chat-foreground text-[14px] leading-[1.7]",
+            isStreaming && "typing-cursor"
+          )}
+        >
+          <ReactMarkdown
+            remarkPlugins={remarkPlugins}
+            components={markdownComponents}
           >
-            <ReactMarkdown
-              remarkPlugins={remarkPlugins}
-              components={markdownComponents}
-            >
-              {displayContent}
-            </ReactMarkdown>
-          </div>
-        )}
+            {displayContent}
+          </ReactMarkdown>
+        </div>
 
         {/* Copy button */}
-        {!isUser && content && !isStreaming && (
-          <Button
-            variant="ghost"
-            size="sm"
+        {content && !isStreaming && (
+          <button
             onClick={handleCopy}
-            className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100 h-7 px-2 gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-all"
+            className="mt-2 opacity-0 group-hover:opacity-100 flex items-center gap-1.5 text-[11px] text-weak-foreground hover:text-muted-foreground transition-all"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
             {copied ? "Copied" : "Copy"}
-          </Button>
+          </button>
         )}
       </div>
-
-      {/* User avatar */}
-      {isUser && (
-        <Avatar className="h-8 w-8 shrink-0 mt-1">
-          <AvatarFallback className="bg-secondary text-secondary-foreground text-xs">
-            <User size={16} />
-          </AvatarFallback>
-        </Avatar>
-      )}
     </div>
   );
 }

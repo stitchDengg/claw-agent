@@ -26,8 +26,8 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
-        <Monitor size={18} />
+      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-zinc-500">
+        <Monitor size={16} />
       </Button>
     );
   }
@@ -39,11 +39,11 @@ export function ThemeToggle() {
 
   const icon =
     theme === "light" ? (
-      <Sun size={18} />
+      <Sun size={16} />
     ) : theme === "dark" ? (
-      <Moon size={18} />
+      <Moon size={16} />
     ) : (
-      <Monitor size={18} />
+      <Monitor size={16} />
     );
 
   return (
@@ -51,7 +51,7 @@ export function ThemeToggle() {
       <Tooltip>
         <TooltipTrigger
           onClick={() => setTheme(nextTheme)}
-          className="inline-flex items-center justify-center h-9 w-9 shrink-0 rounded-lg hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+          className="inline-flex items-center justify-center h-8 w-8 shrink-0 rounded-sm text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
         >
           {icon}
         </TooltipTrigger>

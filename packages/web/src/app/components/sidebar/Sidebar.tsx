@@ -1,12 +1,11 @@
 "use client";
 
-import { MessageSquarePlus, Trash2, Bot, LogOut, User } from "lucide-react";
+import { memo } from "react";
+import { Plus, Trash2, LogOut, Settings, Terminal } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { Conversation } from "@/types";
-import { cn, formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -19,7 +18,7 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
-export default function Sidebar({
+function Sidebar({
   conversations,
   activeId,
   onSelect,
@@ -43,96 +42,105 @@ export default function Sidebar({
     }
   };
 
+  const firstChar = username ? username.charAt(0).toUpperCase() : "U";
+
   return (
     <aside
       className={cn(
-        "h-full flex flex-col border-r border-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out overflow-hidden",
-        isCollapsed ? "w-0 border-r-0" : "w-[280px]"
+        "h-full flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out overflow-hidden",
+        isCollapsed ? "w-0 border-r-0" : "w-[260px]"
       )}
     >
-      {/* Header */}
-      <div className="p-4 border-b border-border shrink-0">
-        <div className="flex items-center gap-2.5 mb-4">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              <Bot size={18} />
-            </AvatarFallback>
-          </Avatar>
+      {/* Brand Header */}
+      <div className="p-6 space-y-6 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-primary flex items-center justify-center rounded-sm shrink-0">
+            <Terminal size={16} className="text-primary-foreground" />
+          </div>
           <div className="min-w-0">
-            <h1 className="text-sm font-semibold tracking-tight truncate">Claw Agent</h1>
-            <p className="text-[11px] text-muted-foreground">AI 智能助手</p>
+            <h1 className="text-lg font-bold tracking-[0.05em] uppercase text-sidebar-foreground">
+              Claw Agent
+            </h1>
+            <p className="text-[10px] tracking-[0.1em] uppercase text-muted-foreground">
+              AI Assistant
+            </p>
           </div>
         </div>
-        <Button onClick={onCreate} className="w-full gap-2" size="sm">
-          <MessageSquarePlus size={16} />
+
+        {/* New Chat Button */}
+        <button
+          onClick={onCreate}
+          className="w-full py-2.5 px-4 bg-primary hover:bg-primary/90 transition-colors text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 rounded-sm"
+        >
+          <Plus size={14} />
           新建对话
-        </Button>
+        </button>
       </div>
 
       {/* Conversation List */}
-      <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-2 custom-scrollbar">
+        <div className="mb-2 px-2 text-[11px] font-bold text-weak-foreground uppercase tracking-[0.1em]">
+          最近对话
+        </div>
+        <div className="space-y-1">
           {conversations.map((conv) => (
             <div
               key={conv.id}
               onClick={() => handleSelect(conv.id)}
               className={cn(
-                "group flex items-center justify-between px-3 py-3 rounded-lg cursor-pointer transition-colors min-h-[44px]",
+                "group flex items-center justify-between px-3 py-2 rounded-sm cursor-pointer transition-colors text-sm",
                 currentActiveId === conv.id
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-accent text-muted-foreground hover:text-accent-foreground"
+                  ? "bg-accent text-accent-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm truncate font-medium">{conv.title}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {formatDate(conv.updatedAt)}
-                </p>
-              </div>
+              <span className="truncate flex-1 min-w-0">{conv.title}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(conv.id);
                 }}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-destructive/10
-                           text-muted-foreground hover:text-destructive transition-all cursor-pointer"
+                className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-red-400 transition-all cursor-pointer shrink-0 ml-2"
               >
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </button>
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border shrink-0">
-        {username ? (
-          <div className="flex items-center justify-between px-2 py-1.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <User size={14} className="text-primary" />
-              </div>
-              <span className="text-sm truncate">{username}</span>
+      <div className="p-4 border-t border-sidebar-border shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-[12px] font-medium text-muted-foreground shrink-0">
+              {firstChar}
             </div>
+            {username && (
+              <span className="text-sm font-medium text-sidebar-foreground truncate">
+                {username}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                className="p-1.5 text-muted-foreground hover:text-sidebar-foreground transition-colors cursor-pointer"
                 title="退出登录"
               >
-                <LogOut size={14} />
+                <LogOut size={16} />
               </button>
             )}
+            <button className="p-1.5 text-muted-foreground hover:text-sidebar-foreground transition-colors">
+              <Settings size={16} />
+            </button>
           </div>
-        ) : (
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-[11px] text-muted-foreground">
-              Powered by LangGraph.js
-            </span>
-          </div>
-        )}
+        </div>
       </div>
     </aside>
   );
 }
+
+export default memo(Sidebar);

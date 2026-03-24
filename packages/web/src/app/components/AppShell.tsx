@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import Sidebar from "./sidebar/Sidebar";
 import { useConversationsContext } from "@/contexts/ConversationsContext";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -52,8 +50,6 @@ export default function AppShell({
 function AppShellContent({
   children,
   activeSessionId,
-  headerTitle,
-  headerSubtitle,
 }: AppShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -68,37 +64,36 @@ function AppShellContent({
     deleteConversation,
     loadMessagesForConversation,
     refreshConversations,
-    isLoading: conversationsLoading,
   } = useConversationsContext();
 
-  const handleNewConversation = async () => {
+  const handleNewConversation = useCallback(async () => {
     const id = await createConversation();
     if (id) {
       router.push(`/chat/${id}`);
     }
     setSheetOpen(false);
-  };
+  }, [createConversation, router]);
 
-  const handleSelectConversation = (id: string) => {
+  const handleSelectConversation = useCallback((id: string) => {
     router.push(`/chat/${id}`);
     setSheetOpen(false);
-  };
+  }, [router]);
 
-  const handleDeleteConversation = async (id: string) => {
+  const handleDeleteConversation = useCallback(async (id: string) => {
     await deleteConversation(id);
     // If we deleted the active conversation, go home
     if (id === activeSessionId) {
       router.push("/");
     }
-  };
+  }, [deleteConversation, activeSessionId, router]);
 
-  const handleToggleSidebar = () => {
+  const handleToggleSidebar = useCallback(() => {
     if (isDesktop) {
-      setSidebarCollapsed(!sidebarCollapsed);
+      setSidebarCollapsed((prev) => !prev);
     } else {
       setSheetOpen(true);
     }
-  };
+  }, [isDesktop]);
 
   const sidebarContent = (
     <Sidebar
@@ -132,7 +127,7 @@ function AppShellContent({
       {/* Mobile Sidebar Sheet */}
       {!isDesktop && (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent side="left" className="w-[280px] p-0">
+          <SheetContent side="left" className="w-[280px] p-0 bg-sidebar border-r border-sidebar-border">
             <SheetTitle className="sr-only">导航菜单</SheetTitle>
             {sidebarContent}
           </SheetContent>
@@ -140,35 +135,41 @@ function AppShellContent({
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-full min-w-0 min-h-0 overflow-hidden">
-        {/* Header */}
-        <header className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 md:py-3 border-b border-border bg-background/80 backdrop-blur-sm shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleToggleSidebar}
-            className="h-9 w-9 shrink-0"
-          >
-            {isDesktop && !sidebarCollapsed ? (
-              <PanelLeftClose size={18} />
-            ) : (
-              <PanelLeft size={18} />
-            )}
-          </Button>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-medium truncate">
-              {activeSessionId
-                ? conversations.find((c) => c.id === activeSessionId)?.title || headerTitle || "对话"
-                : headerTitle || "新对话"}
-            </h2>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {conversationsLoading
-                ? "加载中..."
-                : headerSubtitle || "开始新的对话"}
-            </p>
-          </div>
-          <ThemeToggle />
-        </header>
+      <main className="flex-1 flex flex-col h-full min-w-0 min-h-0 overflow-hidden bg-background relative">
+        {/* Mobile top bar */}
+        {!isDesktop && (
+          <header className="h-12 flex items-center justify-between px-4 bg-sidebar border-b border-sidebar-border shrink-0 md:hidden">
+            <button
+              onClick={handleToggleSidebar}
+              className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <PanelLeft size={20} />
+            </button>
+            <span className="text-sm font-bold tracking-widest uppercase text-foreground">
+              Claw Agent
+            </span>
+            <div className="w-8" />
+          </header>
+        )}
+
+        {/* Chat header for active conversation (desktop) */}
+        {isDesktop && activeSessionId && (
+          <header className="h-12 w-full sticky top-0 z-10 flex justify-between items-center px-6 bg-background">
+            <div className="flex items-center gap-3">
+              {sidebarCollapsed && (
+                <button
+                  onClick={handleToggleSidebar}
+                  className="p-1.5 text-muted-foreground hover:text-foreground transition-colors mr-2"
+                >
+                  <PanelLeft size={18} />
+                </button>
+              )}
+              <span className="text-foreground text-sm font-medium tracking-[0.02em]">
+                {conversations.find((c) => c.id === activeSessionId)?.title || "对话"}
+              </span>
+            </div>
+          </header>
+        )}
 
         {/* Page Content */}
         {children({

@@ -1,23 +1,25 @@
 "use client";
 
-import { Bot } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { memo } from "react";
 
-export default function LoadingIndicator() {
+function LoadingIndicator() {
   return (
-    <div className="flex gap-3 px-2 md:px-4 py-3 animate-fade-in">
-      <Avatar className="h-8 w-8 shrink-0">
-        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-          <Bot size={16} />
-        </AvatarFallback>
-      </Avatar>
-      <div className="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          <span className="loading-dot" />
-          <span className="loading-dot" />
-          <span className="loading-dot" />
-        </div>
+    <div className="animate-fade-in flex flex-col space-y-4">
+      {/* Label */}
+      <div className="flex items-center gap-3">
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-weak-foreground">
+          CLAW AGENT
+        </span>
+      </div>
+
+      {/* Loading dots */}
+      <div className="flex items-center gap-1.5">
+        <span className="loading-dot" />
+        <span className="loading-dot" />
+        <span className="loading-dot" />
       </div>
     </div>
   );
 }
+
+export default memo(LoadingIndicator);

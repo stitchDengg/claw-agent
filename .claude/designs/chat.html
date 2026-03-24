@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b;
+            color: #fafafa;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "surface-container-low": "#1c1b1d",
+                "surface-container-lowest": "#0e0e10",
+                "surface": "#131315",
+                "background": "#131315",
+                "on-background": "#e5e1e4",
+                "primary": "#ffffff",
+                "secondary": "#c6c6cf",
+                "surface-variant": "#353437",
+                "outline": "#919191",
+              },
+              fontFamily: {
+                "headline": ["Inter"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-[#09090b] text-[#fafafa] selection:bg-[#fafafa] selection:text-[#09090b]">
+<!-- Shell Layout -->
+<div class="flex h-screen overflow-hidden">
+<!-- LEFT SIDEBAR (Shared Component: SideNavBar) -->
+<aside class="w-[260px] h-full fixed left-0 top-0 bg-zinc-950 dark:bg-[#0c0c0e] flex flex-col p-6 z-20">
+<!-- Brand Header -->
+<div class="flex items-center gap-3 mb-8">
+<div class="w-8 h-8 bg-[#fafafa] flex items-center justify-center rounded-sm">
+<span class="material-symbols-outlined text-[#0c0c0e] text-lg" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="text-lg font-bold tracking-[0.05em] uppercase text-zinc-50 dark:text-[#fafafa]">Claw Agent</h1>
+<p class="text-[10px] tracking-[0.1em] uppercase text-zinc-500">AI Assistant</p>
+</div>
+</div>
+<!-- Action -->
+<button class="w-full py-2.5 px-4 mb-8 bg-zinc-900 hover:bg-zinc-800 transition-colors text-zinc-50 text-sm font-medium flex items-center justify-center gap-2 rounded-sm">
+<span class="material-symbols-outlined text-sm">add</span>
+                新建对话
+            </button>
+<!-- Navigation Groups -->
+<div class="flex-1 overflow-y-auto no-scrollbar space-y-6">
+<div>
+<h2 class="text-[11px] uppercase tracking-[0.1em] text-[#3f3f46] mb-3 px-2">最近对话</h2>
+<nav class="space-y-1">
+<!-- Active Item -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-sm bg-[#18181b] text-zinc-50 dark:text-[#fafafa] font-medium text-sm transition-colors group" href="#">
+<span class="material-symbols-outlined text-zinc-400 group-hover:text-zinc-50">chat_bubble</span>
+<span class="truncate">React 性能优化讨论</span>
+</a>
+<!-- Inactive Items -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-sm text-zinc-400 dark:text-[#a1a1aa] hover:bg-zinc-900 dark:hover:bg-[#111113] text-sm transition-colors group" href="#">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-300">chat_bubble</span>
+<span class="truncate">API 设计方案</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-sm text-zinc-400 dark:text-[#a1a1aa] hover:bg-zinc-900 dark:hover:bg-[#111113] text-sm transition-colors group" href="#">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-300">chat_bubble</span>
+<span class="truncate">Python 数据分析</span>
+</a>
+</nav>
+</div>
+<div>
+<h2 class="text-[11px] uppercase tracking-[0.1em] text-[#3f3f46] mb-3 px-2">Library</h2>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-sm text-zinc-400 dark:text-[#a1a1aa] hover:bg-zinc-900 dark:hover:bg-[#111113] text-sm transition-colors group" href="#">
+<span class="material-symbols-outlined text-zinc-500 group-hover:text-zinc-300">folder_open</span>
+<span>我的资源库</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Sidebar Bottom -->
+<div class="pt-6 border-t border-zinc-900/50 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img alt="User Avatar" class="w-8 h-8 rounded-full grayscale border border-zinc-800" data-alt="Professional male portrait avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDL6CEdA7A16QyLHHpx9_B3cEvioxBGChjPljVI_3_K6OH7vpXPmoHmFD6bNx0xiGVER8vs-cBi-U7ZVHF8JyF4o0yfSzcCc0RQQeDZUKgWd9XITi9knKpJKjHafC2Zb1iuIzkBma-82zwhTHIsHw5b3KYHMVGCzz7XokRzgZ5wZV_aZ3nCESdURCtkQgPrUJQXquQ-D_rEHnOWzesBMKiU5UeQUoCH4JhWksi0hTpZiKqhFnWX8N-nuTS_-ofaCL5oRkuGTgQxWVY"/>
+<span class="text-sm font-medium text-zinc-300">张明</span>
+</div>
+<button class="text-zinc-500 hover:text-zinc-300 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</aside>
+<!-- MAIN CONTENT AREA -->
+<main class="flex-1 ml-[260px] flex flex-col relative h-full bg-[#09090b]">
+<!-- Top App Bar (Shared Component: TopAppBar) -->
+<header class="h-[48px] w-full sticky top-0 z-10 flex justify-between items-center px-6 bg-zinc-950 dark:bg-[#09090b]">
+<div class="flex items-center gap-3">
+<span class="text-zinc-50 dark:text-[#e4e4e7] text-sm font-medium tracking-[0.02em]">React 性能优化讨论</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-zinc-500 dark:text-[#71717a] hover:text-zinc-50 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="text-zinc-500 dark:text-[#71717a] hover:text-zinc-50 transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Message Scrolling Stage -->
+<section class="flex-1 overflow-y-auto no-scrollbar pt-10 pb-40">
+<div class="max-w-[720px] mx-auto px-6 space-y-12">
+<!-- USER MESSAGE 1 -->
+<div class="flex flex-col items-end space-y-2">
+<div class="bg-[#18181b] text-[#e4e4e7] px-[18px] py-[14px] rounded-2xl rounded-br-sm text-[14px] leading-relaxed max-w-[85%]">
+                            如何优化 React 应用的渲染性能？
+                        </div>
+</div>
+<!-- AI MESSAGE 1 -->
+<div class="flex flex-col space-y-4">
+<div class="flex items-center gap-3">
+<span class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#3f3f46]">CLAW AGENT</span>
+</div>
+<div class="pl-0 space-y-6 text-[#a1a1aa] text-[14px] leading-[1.7]">
+<p>优化 React 性能通常需要从渲染机制、资源加载和状态管理三个维度入手。以下是针对性建议：</p>
+<div class="space-y-6">
+<div class="flex gap-6 items-start">
+<span class="text-[11px] font-mono text-[#3f3f46] pt-1">01</span>
+<div>
+<h4 class="text-[#e4e4e7] font-medium mb-1">利用 React.memo 避免不必要的重渲染</h4>
+<p>通过对组件进行记忆化处理，仅在 Props 发生实质性变化时触发更新。这对于大型列表或复杂可视化组件尤为重要。</p>
+</div>
+</div>
+<div class="flex gap-6 items-start">
+<span class="text-[11px] font-mono text-[#3f3f46] pt-1">02</span>
+<div>
+<h4 class="text-[#e4e4e7] font-medium mb-1">使用 useMemo 和 useCallback</h4>
+<p>缓存计算量大的结果和回调函数引用，防止在每次渲染时重新创建对象，从而打破子组件的渲染优化。</p>
+</div>
+</div>
+<div class="flex gap-6 items-start">
+<span class="text-[11px] font-mono text-[#3f3f46] pt-1">03</span>
+<div>
+<h4 class="text-[#e4e4e7] font-medium mb-1">虚拟滚动 (Virtual Windowing)</h4>
+<p>对于长列表，仅渲染当前视口可见的元素。可以使用 <code class="bg-[#18181b] px-1.5 py-0.5 rounded text-[#e4e4e7]">react-window</code> 等库来实现。</p>
+</div>
+</div>
+</div>
+</div>
+<!-- CODE BLOCK -->
+<div class="bg-[#111113] rounded-lg overflow-hidden border border-zinc-900/50 mt-4">
+<div class="px-4 py-2 bg-[#0c0c0e] border-b border-zinc-900/50 flex justify-between items-center">
+<span class="text-[11px] font-mono text-[#3f3f46] uppercase tracking-wider">component.tsx</span>
+<button class="text-[#3f3f46] hover:text-[#a1a1aa] transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+<div class="p-4 font-mono text-[13px] text-[#a1a1aa] overflow-x-auto">
+<pre><code><span class="text-[#71717a]">import</span> React, { memo } <span class="text-[#71717a]">from</span> 'react';
+
+<span class="text-[#71717a]">const</span> HeavyComponent = <span class="text-[#e4e4e7] font-medium">memo</span>(({ data }) =&gt; {
+  <span class="text-[#71717a]">return</span> (
+    &lt;<span class="text-[#71717a]">div</span>&gt;
+      {<span class="text-[#71717a]">/* 复杂渲染逻辑 */</span>}
+      {data.map(item =&gt; &lt;<span class="text-[#71717a]">span</span> key={item.id}&gt;{item.val}&lt;/<span class="text-[#71717a]">span</span>&gt;)}
+    &lt;/<span class="text-[#71717a]">div</span>&gt;
+  );
+});
+
+<span class="text-[#71717a]">export default</span> HeavyComponent;</code></pre>
+</div>
+</div>
+</div>
+<!-- USER MESSAGE 2 -->
+<div class="flex flex-col items-end space-y-2">
+<div class="bg-[#18181b] text-[#e4e4e7] px-[18px] py-[14px] rounded-2xl rounded-br-sm text-[14px] leading-relaxed max-w-[85%]">
+                            能给个具体的代码示例吗？
+                        </div>
+</div>
+</div>
+</section>
+<!-- FIXED BOTTOM INPUT -->
+<div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#09090b] via-[#09090b] to-transparent pt-10 pb-6">
+<div class="max-w-[720px] mx-auto px-6">
+<div class="relative group">
+<div class="bg-[#111113] rounded-2xl border border-[#27272a] hover:border-[#3f3f46] transition-colors flex items-center p-1.5 pl-5">
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-[#e4e4e7] placeholder-[#3f3f46] text-[14px]" placeholder="输入消息..." type="text"/>
+<div class="flex items-center gap-2 pr-1">
+<button class="p-2 text-[#3f3f46] hover:text-[#a1a1aa] transition-colors">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center bg-[#fafafa] text-[#09090b] rounded-full hover:bg-zinc-200 transition-all active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'wght' 600;">arrow_upward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-3 text-center">
+<span class="text-[11px] text-[#3f3f46] tracking-wide">Claw Agent 可能会犯错。请核查重要信息。</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
