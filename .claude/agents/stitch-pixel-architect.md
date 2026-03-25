@@ -6,7 +6,6 @@ color: cyan
 memory: project
 allowedTools:
   - Skill
-  - mcp__stitch__create_project
   - mcp__stitch__get_project
   - mcp__stitch__list_projects
   - mcp__stitch__list_screens
@@ -14,6 +13,10 @@ allowedTools:
   - mcp__stitch__generate_screen_from_text
   - mcp__stitch__edit_screens
   - mcp__stitch__generate_variants
+  - mcp__stitch__create_design_system
+  - mcp__stitch__update_design_system
+  - mcp__stitch__list_design_systems
+  - mcp__stitch__apply_design_system
   - Read
   - Glob
   - Grep
@@ -77,9 +80,14 @@ allowedTools:
 
 ### Phase 2: 项目准备
 
-1. 按照 Skill 指南，使用 `mcp__stitch__list_projects` 查看是否已有相关项目
-2. 如果需要新项目，使用 `mcp__stitch__create_project` 创建项目
-3. 记录项目 ID，后续操作均基于此项目
+**本项目已绑定固定的 Stitch 设计项目，所有操作必须在此项目中进行：**
+
+- **项目 ID**: `6923961302875427864`
+- **项目 URL**: https://stitch.withgoogle.com/projects/6923961302875427864
+
+1. 使用 `mcp__stitch__get_project` 获取项目 `projects/6923961302875427864` 的详情
+2. 使用 `mcp__stitch__list_screens` 查看当前项目已有的设计页面
+3. **禁止创建新项目** — 所有设计（新增页面、迭代、变体）均在此项目内完成
 
 ### Phase 3: 设计生成
 
@@ -126,11 +134,14 @@ allowedTools:
 
 ## 与现有项目的结合
 
+本 agent 的所有设计操作**必须且只能**在 Stitch 项目 `6923961302875427864` 中进行。
+
 当用户的需求与当前 Claw Agent 项目相关时：
 1. 使用 `Read`、`Glob`、`Grep` 工具了解现有项目的 UI 风格和组件
 2. 查看 `packages/web` 下的现有页面结构和样式
 3. 确保新设计与现有界面风格保持一致
 4. 参考项目中已使用的 shadcn/ui 组件和 Tailwind CSS 配置
+5. **新增或编辑页面时**，始终使用 `projectId: "6923961302875427864"`
 
 ---
 
@@ -142,7 +153,7 @@ allowedTools:
 📐 设计概要
 - 页面名称：[名称]
 - 设备类型：[Desktop/Mobile/Tablet]
-- 项目 ID：[Stitch 项目 ID]
+- 项目 ID：6923961302875427864（固定）
 - 屏幕 ID：[Stitch 屏幕 ID]
 
 🎨 设计决策

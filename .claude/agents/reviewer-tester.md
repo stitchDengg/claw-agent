@@ -86,6 +86,45 @@ Read every changed file thoroughly. Focus on these critical areas:
    - `pnpm test` scoped to the affected package(s) if possible (e.g., `pnpm --filter <package> test`)
 4. If any command fails, analyze the output and report the root cause.
 
+## Phase 4.5: UI Automated Testing (UI 自动化验证)
+
+**When the changed files include frontend UI code (components, pages, styles under `packages/web`), this phase is MANDATORY. Skip only if changes are purely backend/agent logic.**
+
+The canonical Stitch design project for this codebase is: **`projects/6923961302875427864`** (URL: https://stitch.withgoogle.com/projects/6923961302875427864)
+
+### 4.5a. Retrieve Design Reference
+
+1. Use `mcp__stitch__list_screens` with `projectId: "6923961302875427864"` to list all design screens.
+2. Identify the screen(s) that correspond to the changed UI pages/components.
+3. Use `mcp__stitch__get_screen` to fetch the design spec details (layout, colors, typography, spacing) for each relevant screen.
+
+### 4.5b. Launch App & Capture Live UI
+
+1. Ensure the dev server is running (`pnpm dev`). If not, start it via Bash in background.
+2. Use `mcp__chrome-devtools__navigate_page` to open the relevant page(s) in the browser (e.g., `http://localhost:3000`, `http://localhost:3000/login`).
+3. Wait for the page to fully load using `mcp__chrome-devtools__wait_for`.
+4. Use `mcp__chrome-devtools__take_snapshot` to capture the accessibility tree of the live page.
+5. Use `mcp__chrome-devtools__take_screenshot` to capture a visual screenshot of the live page.
+
+### 4.5c. Compare Design vs Implementation
+
+For each relevant screen, cross-reference the Stitch design spec against the live UI:
+
+- **Layout & Structure**: Does the DOM structure (from snapshot) match the design's component hierarchy and layout?
+- **Visual Fidelity**: Compare the screenshot against the Stitch design — check colors, spacing, typography, border-radius, and alignment.
+- **Responsive Behavior**: If the design specifies multiple device types, use `mcp__chrome-devtools__emulate` to test viewport sizes (mobile: `375x812`, tablet: `768x1024`, desktop: `1440x900`) and compare each.
+- **Interactive States**: Use `mcp__chrome-devtools__hover` and `mcp__chrome-devtools__click` to verify hover states, focus states, active states, and transitions match the design intent.
+- **Accessibility**: Run `mcp__chrome-devtools__lighthouse_audit` with `mode: "snapshot"` to check accessibility scores. Flag any WCAG violations.
+
+### 4.5d. Report UI Discrepancies
+
+For each discrepancy found, report:
+- **Screen**: Which Stitch screen ID vs which page URL
+- **Element**: Which component/element is affected
+- **Expected** (from design): What the Stitch design specifies
+- **Actual** (from live UI): What the implementation shows
+- **Severity**: 🔴 Critical (layout broken, missing elements) | 🟡 Warning (color/spacing off) | 🔵 Minor (subtle differences)
+
 ## Phase 5: Verdict & Report (裁决与反馈)
 
 After completing all phases, deliver your verdict:
