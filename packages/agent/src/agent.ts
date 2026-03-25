@@ -18,7 +18,7 @@ export function createAgent(config: AgentConfig) {
   const llm = new ChatAnthropic({
     anthropicApiKey: config.apiKey,
     anthropicApiUrl: config.baseUrl,
-    modelName: config.modelName || 'MiniMax-M2.5',
+    modelName: config.modelName || 'MiniMax-M2.7',
     maxTokens: config.maxTokens || 4096,
     streaming: true,
     clientOptions: {

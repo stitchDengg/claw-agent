@@ -4,8 +4,6 @@ import { AgentService, ChatMessage } from './agent/agent.service';
 import { Response } from 'express';
 
 const STREAM_TIMEOUT_MS = 60_000; // 60s total stream timeout
-const CHUNK_SPLIT_THRESHOLD = 10; // Split chunks larger than this many characters
-const CHUNK_SPLIT_SIZE = 6; // Split into pieces of this size
 
 @Injectable()
 export class ChatService {
@@ -17,24 +15,10 @@ export class ChatService {
   ) {}
 
   /**
-   * Write a token to the SSE response, splitting large chunks into smaller
-   * pieces for smoother streaming on the frontend.
+   * Write a token directly to the SSE response.
    */
-  private async writeTokenChunked(res: Response, token: string): Promise<void> {
-    if (token.length <= CHUNK_SPLIT_THRESHOLD) {
-      res.write(`0:${JSON.stringify(token)}\n`);
-      return;
-    }
-
-    // Split large token into smaller chunks for smoother output
-    for (let i = 0; i < token.length; i += CHUNK_SPLIT_SIZE) {
-      const piece = token.slice(i, i + CHUNK_SPLIT_SIZE);
-      res.write(`0:${JSON.stringify(piece)}\n`);
-      // Yield to the event loop so Node can flush the write buffer
-      if (i + CHUNK_SPLIT_SIZE < token.length) {
-        await new Promise<void>((resolve) => setImmediate(resolve));
-      }
-    }
+  private writeToken(res: Response, token: string): void {
+    res.write(`0:${JSON.stringify(token)}\n`);
   }
 
   /**
@@ -141,7 +125,7 @@ export class ChatService {
             const token = this.extractToken(chunk.content);
             if (token) {
               fullText += token;
-              await this.writeTokenChunked(res, token);
+              this.writeToken(res, token);
             }
           }
         }
