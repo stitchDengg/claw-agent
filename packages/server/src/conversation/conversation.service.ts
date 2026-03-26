@@ -35,6 +35,7 @@ export class ConversationService {
             id: true,
             role: true,
             content: true,
+            thinking: true,
             createdAt: true,
           },
         },
@@ -54,6 +55,7 @@ export class ConversationService {
         id: m.id,
         role: m.role,
         content: m.content,
+        thinking: m.thinking || undefined,
         createdAt: m.createdAt.toISOString(),
       })),
     };

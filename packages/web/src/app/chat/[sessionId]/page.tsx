@@ -28,6 +28,24 @@ export default function ChatSessionPage() {
   );
 }
 
+// Type guard for thinking annotation objects from the stream
+interface ThinkingDelta {
+  type: "thinking_delta";
+  content: string;
+}
+
+interface ThinkingComplete {
+  type: "thinking_complete";
+}
+
+type ThinkingAnnotation = ThinkingDelta | ThinkingComplete;
+
+function isThinkingAnnotation(val: unknown): val is ThinkingAnnotation {
+  if (typeof val !== "object" || val === null) return false;
+  const obj = val as Record<string, unknown>;
+  return obj.type === "thinking_delta" || obj.type === "thinking_complete";
+}
+
 function ChatSessionContent({
   sessionId,
   loadMessagesForConversation,
@@ -39,7 +57,16 @@ function ChatSessionContent({
   const lastUserMsgRef = useRef<HTMLDivElement>(null);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
 
-  const { messages, input, setInput, handleSubmit, isLoading, stop, setMessages, append } =
+  // Thinking state: maps messageId -> accumulated thinking content
+  const [thinkingMap, setThinkingMap] = useState<Record<string, string>>({});
+  const [thinkingCompleteSet, setThinkingCompleteSet] = useState<Set<string>>(new Set());
+  const [thinkingDurationMap, setThinkingDurationMap] = useState<Record<string, number>>({});
+  // Track thinking start times (ref since we don't need re-renders)
+  const thinkingStartTimeRef = useRef<Record<string, number>>({});
+  // Track processed data length to avoid reprocessing
+  const processedDataLenRef = useRef(0);
+
+  const { messages, input, setInput, handleSubmit, isLoading, stop, setMessages, append, data } =
     useChat({
       api: "/api/chat",
       id: sessionId,
@@ -50,16 +77,101 @@ function ChatSessionContent({
       },
     });
 
+  // Process streaming annotations (prefix 2:) to build thinking content
+  useEffect(() => {
+    if (!data || data.length === 0) return;
+
+    // Only process new data items since last check
+    const startIdx = processedDataLenRef.current;
+    if (startIdx >= data.length) return;
+
+    const newItems = data.slice(startIdx);
+    processedDataLenRef.current = data.length;
+
+    // Find current assistant message id (last assistant message while streaming)
+    const lastMsg = messages[messages.length - 1];
+    const currentAssistantId =
+      lastMsg?.role === "assistant" ? lastMsg.id : null;
+    if (!currentAssistantId) return;
+
+    let thinkingDelta = "";
+    let thinkingDone = false;
+
+    for (const item of newItems) {
+      // Each data item from prefix 2: is an element of the array
+      // e.g., data receives: {"type":"thinking_delta","content":"..."} or {"type":"thinking_complete"}
+      if (isThinkingAnnotation(item)) {
+        if (item.type === "thinking_delta") {
+          thinkingDelta += item.content;
+        } else if (item.type === "thinking_complete") {
+          thinkingDone = true;
+        }
+      }
+    }
+
+    if (thinkingDelta) {
+      // Record start time on first thinking delta for this message
+      if (!thinkingStartTimeRef.current[currentAssistantId]) {
+        thinkingStartTimeRef.current[currentAssistantId] = Date.now();
+      }
+      setThinkingMap((prev) => ({
+        ...prev,
+        [currentAssistantId]: (prev[currentAssistantId] ?? "") + thinkingDelta,
+      }));
+    }
+
+    if (thinkingDone) {
+      // Calculate duration
+      const startTime = thinkingStartTimeRef.current[currentAssistantId];
+      if (startTime) {
+        const durationSec = Math.round((Date.now() - startTime) / 1000);
+        setThinkingDurationMap((prev) => ({
+          ...prev,
+          [currentAssistantId]: durationSec,
+        }));
+      }
+      setThinkingCompleteSet((prev) => {
+        const next = new Set(prev);
+        next.add(currentAssistantId);
+        return next;
+      });
+    }
+  }, [data, messages]);
+
+  // Reset thinking data processing counter when data is cleared (new message)
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      processedDataLenRef.current = 0;
+    }
+  }, [data]);
+
   // Load existing messages when sessionId changes
   useEffect(() => {
     if (!sessionId) return;
     let cancelled = false;
     setMessagesLoaded(false);
+    // Reset thinking state for new session
+    setThinkingMap({});
+    setThinkingCompleteSet(new Set());
+    setThinkingDurationMap({});
+    thinkingStartTimeRef.current = {};
+    processedDataLenRef.current = 0;
 
     (async () => {
-      const msgs = await loadMessagesForConversation(sessionId);
+      const result = await loadMessagesForConversation(sessionId);
       if (!cancelled) {
-        setMessages(msgs);
+        // result may contain thinking data via extra fields
+        // Extract thinking map from loaded messages
+        const historyThinkingMap: Record<string, string> = {};
+        for (const msg of result.messages) {
+          if (msg.thinking) {
+            historyThinkingMap[msg.id] = msg.thinking;
+          }
+        }
+        setThinkingMap(historyThinkingMap);
+        // All historical messages have completed thinking
+        setThinkingCompleteSet(new Set(Object.keys(historyThinkingMap)));
+        setMessages(result.messages);
         setMessagesLoaded(true);
       }
 
@@ -70,7 +182,7 @@ function ChatSessionContent({
         if (pendingMessage) {
           sessionStorage.removeItem(pendingKey);
           // Only send if no existing messages (fresh conversation)
-          if (msgs.length === 0) {
+          if (result.messages.length === 0) {
             append({ role: "user", content: pendingMessage });
           }
         }
@@ -79,6 +191,9 @@ function ChatSessionContent({
 
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Intentionally only trigger on sessionId change: loadMessagesForConversation, setMessages,
+    // append are stable callbacks; including them would cause spurious re-runs. The `cancelled`
+    // flag ensures safety against async races.
   }, [sessionId]);
 
   const handleSubmitWithSave = useCallback(
@@ -199,18 +314,30 @@ function ChatSessionContent({
           <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
         ) : (
           <div className="max-w-[720px] mx-auto px-6 pt-10 pb-40 space-y-12">
-            {messages.map((message, index) => (
-              <div
-                key={message.id}
-                ref={index === lastUserMsgIndex ? lastUserMsgRef : undefined}
-              >
-                <ChatMessage
-                  role={message.role as "user" | "assistant"}
-                  content={message.content}
-                  isStreaming={message.id === streamingMessageId}
-                />
-              </div>
-            ))}
+            {messages.map((message, index) => {
+              const thinking = thinkingMap[message.id];
+              const isThinkingComplete = thinkingCompleteSet.has(message.id);
+              const isCurrentlyStreaming = message.id === streamingMessageId;
+              // Thinking is still streaming if: message is streaming, has thinking content, and thinking not complete
+              const isThinkingStreaming = isCurrentlyStreaming && !!thinking && !isThinkingComplete;
+              const thinkingDuration = thinkingDurationMap[message.id];
+
+              return (
+                <div
+                  key={message.id}
+                  ref={index === lastUserMsgIndex ? lastUserMsgRef : undefined}
+                >
+                  <ChatMessage
+                    role={message.role as "user" | "assistant"}
+                    content={message.content}
+                    isStreaming={isCurrentlyStreaming}
+                    thinking={thinking}
+                    isThinkingStreaming={isThinkingStreaming}
+                    thinkingDurationSeconds={thinkingDuration}
+                  />
+                </div>
+              );
+            })}
             {isLoading &&
               messages[messages.length - 1]?.role === "user" && (
                 <LoadingIndicator />

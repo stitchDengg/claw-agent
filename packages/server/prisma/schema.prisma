@@ -36,6 +36,7 @@ model Message {
   conversationId String       @map("conversation_id")
   role           MessageRole
   content        String       @db.Text
+  thinking       String?      @db.Text
   createdAt      DateTime     @default(now()) @map("created_at")
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 

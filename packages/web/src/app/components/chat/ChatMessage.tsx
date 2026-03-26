@@ -8,11 +8,15 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
 import type { Components } from "react-markdown";
+import ThinkingBlock from "./ThinkingBlock";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
+  thinking?: string;
+  isThinkingStreaming?: boolean;
+  thinkingDurationSeconds?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -210,6 +214,9 @@ function ChatMessageInner({
   role,
   content,
   isStreaming,
+  thinking,
+  isThinkingStreaming,
+  thinkingDurationSeconds,
 }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
@@ -247,6 +254,16 @@ function ChatMessageInner({
           CLAW AGENT
         </span>
       </div>
+
+      {/* Thinking Block */}
+      {thinking && (
+        <ThinkingBlock
+          content={thinking}
+          isStreaming={!!isThinkingStreaming}
+          isComplete={!isThinkingStreaming && !!thinking}
+          durationSeconds={thinkingDurationSeconds}
+        />
+      )}
 
       {/* Content */}
       <div className="relative group">

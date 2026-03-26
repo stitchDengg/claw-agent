@@ -24,6 +24,12 @@ export function createAgent(config: AgentConfig) {
     clientOptions: {
       timeout: 60_000, // 60s timeout for API calls
     },
+    ...(config.thinking?.enabled && {
+      thinking: {
+        type: 'enabled' as const,
+        budget_tokens: config.thinking.budgetTokens ?? 10000,
+      },
+    }),
   });
 
   const llmWithTools = llm.bindTools(allTools);
@@ -39,7 +45,7 @@ export function createAgent(config: AgentConfig) {
 
     if (Array.isArray(response.content)) {
       const textParts: string[] = [];
-      const filteredContent: Array<{ type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
+      const filteredContent: Array<{ type: string; text?: string; thinking?: string; id?: string; name?: string; input?: Record<string, unknown> }> = [];
 
       for (const block of response.content) {
         if (typeof block === 'object' && block !== null) {
@@ -49,6 +55,8 @@ export function createAgent(config: AgentConfig) {
             filteredContent.push(block as { type: string; text: string });
           } else if (b.type === 'tool_use') {
             filteredContent.push(block as { type: string; id: string; name: string; input: Record<string, unknown> });
+          } else if (b.type === 'thinking') {
+            filteredContent.push(block as { type: string; thinking: string });
           }
         }
       }
@@ -56,7 +64,13 @@ export function createAgent(config: AgentConfig) {
       if (response.tool_calls && response.tool_calls.length > 0) {
         response.content = filteredContent;
       } else {
-        response.content = textParts.join('\n');
+        // Preserve thinking blocks in content array if present
+        const hasThinking = filteredContent.some((b) => b.type === 'thinking');
+        if (hasThinking) {
+          response.content = filteredContent.filter((b) => b.type === 'thinking' || b.type === 'text');
+        } else {
+          response.content = textParts.join('\n');
+        }
       }
     }
 

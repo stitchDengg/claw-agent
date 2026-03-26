@@ -378,3 +378,58 @@
 
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
 .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ---- Thinking Block Animations ---- */
+
+/* Brain icon pulse: scale 0.95→1.05 */
+@keyframes thinking-pulse {
+  0%, 100% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+}
+
+.thinking-pulse {
+  animation: thinking-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Orange pulsing dot next to "正在深度思考..." */
+@keyframes thinking-dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.thinking-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: thinking-dot-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Blinking cursor at end of streaming thinking text */
+@keyframes thinking-cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.thinking-cursor::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #4a4bd7;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: thinking-cursor-blink 1s infinite;
+}
+
+/* Scrollbar for thinking content area */
+.thinking-content-scroll::-webkit-scrollbar { width: 4px; }
+.thinking-content-scroll::-webkit-scrollbar-track { background: transparent; }
+.thinking-content-scroll::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 10px; }
+.thinking-content-scroll::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.4); }
+
+/* Hide fade overlay when content does not overflow */
+.thinking-content-scroll:not([style*="overflow"]) + .thinking-fade-overlay {
+  display: none;
+}

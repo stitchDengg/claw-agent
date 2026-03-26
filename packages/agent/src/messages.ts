@@ -9,7 +9,17 @@ export function convertToLangChainMessages(messages: ChatMessage[], systemPrompt
     if (msg.role === 'user') {
       lcMessages.push(new HumanMessage(msg.content));
     } else if (msg.role === 'assistant') {
-      lcMessages.push(new AIMessage(msg.content));
+      if (msg.thinking) {
+        // Reconstruct content blocks with thinking for multi-turn fidelity
+        lcMessages.push(new AIMessage({
+          content: [
+            { type: 'thinking', thinking: msg.thinking },
+            { type: 'text', text: msg.content },
+          ],
+        }));
+      } else {
+        lcMessages.push(new AIMessage(msg.content));
+      }
     }
   }
 

@@ -12,6 +12,10 @@ export class AgentService implements OnModuleInit {
     this.agent = createAgent({
       apiKey: this.configService.get<string>('MINIMAX_API_KEY') || '',
       baseUrl: this.configService.get<string>('MINIMAX_BASE_URL') || 'https://api.minimaxi.com/anthropic',
+      thinking: {
+        enabled: this.configService.get<string>('THINKING_ENABLED', 'true') === 'true',
+        budgetTokens: parseInt(this.configService.get<string>('THINKING_BUDGET_TOKENS', '10000'), 10),
+      },
     });
   }
 

@@ -15,16 +15,51 @@ export class ChatService {
   ) {}
 
   /**
-   * Write a token directly to the SSE response.
+   * Write a text token directly to the SSE response.
    */
   private writeToken(res: Response, token: string): void {
     res.write(`0:${JSON.stringify(token)}\n`);
   }
 
   /**
+   * Write a thinking token as a data annotation (prefix 2:).
+   */
+  private writeThinkingToken(res: Response, token: string): void {
+    const annotation = [{ type: 'thinking_delta', content: token }];
+    res.write(`2:${JSON.stringify(annotation)}\n`);
+  }
+
+  /**
+   * Write a thinking-complete annotation (prefix 2:).
+   */
+  private writeThinkingEnd(res: Response): void {
+    const annotation = [{ type: 'thinking_complete' }];
+    res.write(`2:${JSON.stringify(annotation)}\n`);
+  }
+
+  /**
+   * Extract thinking token from a stream chunk's content.
+   * Returns thinking text from blocks with type:'thinking'.
+   */
+  private extractThinkingToken(content: unknown): string {
+    if (Array.isArray(content)) {
+      const parts: string[] = [];
+      for (const block of content) {
+        if (typeof block === 'object' && block !== null) {
+          const b = block as Record<string, unknown>;
+          if (b.type === 'thinking' && typeof b.thinking === 'string') {
+            parts.push(b.thinking);
+          }
+        }
+      }
+      return parts.join('');
+    }
+    return '';
+  }
+
+  /**
    * Extract text token from a stream chunk's content.
    * Content can be a plain string or an array of blocks.
-   * Supports: {type:'text', text:'...'} and {type:'thinking', thinking:'...'} (MiniMax)
    */
   private extractToken(content: unknown): string {
     if (typeof content === 'string') {
@@ -70,10 +105,11 @@ export class ChatService {
       },
     });
 
-    // 构建历史消息上下文
+    // 构建历史消息上下文（包含 thinking）
     const historyMessages: ChatMessage[] = conversation.messages.map((m) => ({
       role: m.role as ChatMessage['role'],
       content: m.content,
+      thinking: m.thinking || undefined,
     }));
     historyMessages.push({ role: 'user', content: message });
 
@@ -106,6 +142,9 @@ export class ChatService {
 
       // 使用 streamEvents 实现真正的流式输出（带超时）
       let fullText = '';
+      let fullThinking = '';
+      let isInThinkingPhase = true;
+
       const eventStream = agent.streamEvents(
         { messages: lcMessages },
         { version: 'v2' },
@@ -122,8 +161,23 @@ export class ChatService {
             event.data?.chunk
           ) {
             const chunk = event.data.chunk;
+
+            // Extract thinking tokens
+            const thinkingToken = this.extractThinkingToken(chunk.content);
+            if (thinkingToken) {
+              fullThinking += thinkingToken;
+              this.writeThinkingToken(res, thinkingToken);
+              continue;
+            }
+
+            // Extract text tokens
             const token = this.extractToken(chunk.content);
             if (token) {
+              // Transition from thinking to text phase
+              if (isInThinkingPhase && fullThinking) {
+                this.writeThinkingEnd(res);
+                isInThinkingPhase = false;
+              }
               fullText += token;
               this.writeToken(res, token);
             }
@@ -137,7 +191,7 @@ export class ChatService {
 
       await Promise.race([streamPromise, timeoutPromise]);
 
-      this.logger.log(`[Chat] Stream completed, fullText length: ${fullText.length}`);
+      this.logger.log(`[Chat] Stream completed, fullText length: ${fullText.length}, fullThinking length: ${fullThinking.length}`);
 
       // 流式输出完成后，持久化 assistant 消息
       if (fullText) {
@@ -146,6 +200,7 @@ export class ChatService {
             conversationId,
             role: 'assistant',
             content: fullText,
+            thinking: fullThinking || null,
           },
         });
 

@@ -19,6 +19,7 @@ interface ApiConversationDetail extends ApiConversation {
     id: string;
     role: string;
     content: string;
+    thinking?: string;
     createdAt: string;
   }>;
 }
@@ -30,6 +31,14 @@ function toConversation(api: ApiConversation): Conversation {
     createdAt: new Date(api.createdAt),
     updatedAt: new Date(api.updatedAt),
   };
+}
+
+export interface MessageWithThinking extends Message {
+  thinking?: string;
+}
+
+export interface LoadMessagesResult {
+  messages: MessageWithThinking[];
 }
 
 export function useConversations() {
@@ -100,21 +109,23 @@ export function useConversations() {
   }, []);
 
   const loadMessagesForConversation = useCallback(
-    async (conversationId: string): Promise<Message[]> => {
-      if (!conversationId) return [];
+    async (conversationId: string): Promise<LoadMessagesResult> => {
+      if (!conversationId) return { messages: [] };
       try {
         const detail = await apiFetch<ApiConversationDetail>(
           `/api/conversations/${conversationId}`
         );
-        return detail.messages.map((m) => ({
+        const messages: MessageWithThinking[] = detail.messages.map((m) => ({
           id: m.id,
           role: m.role as Message["role"],
           content: m.content,
+          thinking: m.thinking,
           createdAt: new Date(m.createdAt),
         }));
+        return { messages };
       } catch (err) {
         console.error("Failed to load messages:", err);
-        return [];
+        return { messages: [] };
       }
     },
     []
