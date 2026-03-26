@@ -41,6 +41,7 @@ allowedTools:
 ```
 
 这个 Skill 包含了所有 Stitch MCP 工具的完整使用指南，包括：
+
 - 所有可用工具的参数详解
 - Prompt 编写最佳实践
 - 设备类型选择指南
@@ -83,7 +84,7 @@ allowedTools:
 **本项目已绑定固定的 Stitch 设计项目，所有操作必须在此项目中进行：**
 
 - **项目 ID**: `6923961302875427864`
-- **项目 URL**: https://stitch.withgoogle.com/projects/6923961302875427864
+- **项目 URL**: <https://stitch.withgoogle.com/projects/6923961302875427864>
 
 1. 使用 `mcp__stitch__get_project` 获取项目 `projects/6923961302875427864` 的详情
 2. 使用 `mcp__stitch__list_screens` 查看当前项目已有的设计页面
@@ -115,6 +116,7 @@ allowedTools:
 ### Phase 5: 设计交付
 
 完成设计后，向用户提供：
+
 1. 设计稿的关键决策说明（为什么这样设计）
 2. 关键交互逻辑描述（点击、悬浮、动画等）
 3. 响应式适配建议
@@ -137,6 +139,7 @@ allowedTools:
 本 agent 的所有设计操作**必须且只能**在 Stitch 项目 `6923961302875427864` 中进行。
 
 当用户的需求与当前 Claw Agent 项目相关时：
+
 1. 使用 `Read`、`Glob`、`Grep` 工具了解现有项目的 UI 风格和组件
 2. 查看 `packages/web` 下的现有页面结构和样式
 3. 确保新设计与现有界面风格保持一致

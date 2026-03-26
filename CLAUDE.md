@@ -105,6 +105,13 @@ GitHub Actions deploys to Tencent Cloud on push to `main`:
 3. Run Prisma migrations
 4. Execute `scripts/smoke-test.sh` — tests health, auth, conversations, chat, cleanup
 
+## Chrome MCP Login Credentials
+
+When using Chrome DevTools MCP and the application requires login, use:
+
+- **Username**: `stitichdeng`
+- **Password**: `dh1051766345`
+
 ## Coding Standards
 
 From `.cursor/rules/typescript-monorepo.mdc`:
